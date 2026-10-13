@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusFood — Supabase Database Integration & Architecture Manual</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #047857;
+      --primary-light: #ecfdf5;
+      --primary-dark: #064e3b;
+      --primary-accent: #10b981;
+      --amber-subtle: #fef3c7;
+      --amber-dark: #92400e;
+      --cyan-subtle: #e0f2fe;
+      --cyan-dark: #0369a1;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+      --bg: #f8f5ea;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: radial-gradient(circle at top left, rgba(234, 179, 8, 0.12), transparent 28%),
+                  radial-gradient(circle at bottom right, rgba(22, 101, 52, 0.08), transparent 30%),
+                  var(--bg);
+      color: var(--slate-900);
+      line-height: 1.6;
+      padding: 40px 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+      background: #ffffff;
+      border: 1px solid rgba(4, 120, 87, 0.15);
+      border-radius: 28px;
+      padding: 50px;
+      box-shadow: 0 25px 60px -15px rgba(4, 120, 87, 0.12), 0 0 1px 1px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Header styling */
+    .header {
+      border-bottom: 2px solid var(--slate-100);
+      padding-bottom: 35px;
+      margin-bottom: 40px;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--primary);
+      background-color: var(--primary-light);
+      border: 1px solid rgba(4, 120, 87, 0.2);
+      border-radius: 9999px;
+    }
+
+    .badge-amber {
+      color: var(--amber-dark);
+      background-color: var(--amber-subtle);
+      border-color: rgba(180, 83, 9, 0.2);
+    }
+
+    .badge-cyan {
+      color: var(--cyan-dark);
+      background-color: var(--cyan-subtle);
+      border-color: rgba(3, 105, 161, 0.2);
+    }
+
+    h1 {
+      font-size: 38px;
+      font-weight: 800;
+      color: var(--slate-900);
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      font-size: 17.5px;
+      color: var(--slate-600);
+      font-weight: 400;
+      max-width: 860px;
+    }
+
+    /* Navigation links */
+    .nav-bar {
+      display: flex;
+      gap: 16px;
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px dashed var(--slate-200);
+      font-size: 14px;
+    }
+
+    .nav-link {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Section styling */
+    .section {
+      margin-bottom: 50px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 1.5px solid var(--slate-100);
+    }
+
+    .section-num {
+      background: var(--primary);
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 700;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    h2 {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--slate-900);
+      letter-spacing: -0.02em;
+    }
+
+    h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--slate-800);
+      margin-top: 24px;
+      margin-bottom: 12px;
+    }
+
+    p {
+      color: var(--slate-700);
+      margin-bottom: 16px;
+      font-size: 15.5px;
+    }
+
+    /* Grid & Cards */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      margin: 20px 0;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+      margin: 20px 0;
+    }
+
+    .card {
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 18px;
+      padding: 24px;
+      transition: all 0.2s ease;
+    }
+
+    .card:hover {
+      border-color: rgba(4, 120, 87, 0.4);
+      box-shadow: 0 10px 25px -8px rgba(4, 120, 87, 0.08);
+    }
+
+    .card-title {
+      font-size: 16.5px;
+      font-weight: 700;
+      color: var(--slate-900);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-text {
+      font-size: 14px;
+      color: var(--slate-600);
+      margin-bottom: 0;
+    }
+
+    /* Code blocks */
+    pre.code-block {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.65;
+      padding: 20px;
+      border-radius: 14px;
+      overflow-x: auto;
+      margin: 16px 0;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.4);
+      white-space: pre;
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      background: #f1f5f9;
+      color: #0f172a;
+      padding: 2px 6px;
+      border-radius: 5px;
+    }
+
+    pre.code-block code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+    }
+
+    .sql-keyword { color: #f43f5e; font-weight: 600; }
+    .sql-function { color: #38bdf8; font-weight: 600; }
+    .sql-string { color: #4ade80; }
+    .sql-comment { color: #94a3b8; font-style: italic; }
+    .sql-type { color: #fbbf24; }
+
+    /* Tables */
+    .table-container {
+      overflow-x: auto;
+      border: 1px solid var(--slate-200);
+      border-radius: 16px;
+      margin: 20px 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    th {
+      background-color: var(--slate-100);
+      color: var(--slate-800);
+      font-weight: 700;
+      padding: 13px 16px;
+      border-bottom: 2px solid var(--slate-200);
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--slate-100);
+      color: var(--slate-700);
+      vertical-align: top;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background-color: #fafbfc;
+    }
+
+    .col-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary-dark);
+    }
+
+    .col-type {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    /* Callout */
+    .callout {
+      background: #f0fdf4;
+      border-left: 4px solid var(--primary-accent);
+      padding: 20px;
+      border-radius: 12px;
+      margin: 24px 0;
+    }
+
+    .callout-amber {
+      background: #fffbeb;
+      border-left-color: #f59e0b;
+    }
+
+    .callout-title {
+      font-weight: 700;
+      color: var(--primary-dark);
+      font-size: 16px;
+      margin-bottom: 6px;
+    }
+
+    .callout-amber .callout-title {
+      color: var(--amber-dark);
+    }
+
+    .callout-body {
+      font-size: 14.5px;
+      color: #166534;
+      margin-bottom: 0;
+    }
+
+    .callout-amber .callout-body {
+      color: #92400e;
+    }
+
+    /* Workflow pipeline */
+    .step-item {
+      display: flex;
+      gap: 16px;
+      background: #ffffff;
+      border: 1px solid var(--slate-200);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    }
+
+    .step-badge {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--primary-light);
+      border: 1.5px solid var(--primary);
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .doc-footer {
+      border-top: 1px solid var(--slate-200);
+      padding-top: 25px;
+      margin-top: 50px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--slate-600);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+        padding: 0;
+      }
+      .container {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        max-width: 100%;
+      }
+      pre.code-block {
+        background: #f8fafc;
+        color: #0f172a;
+        border: 1px solid #cbd5e1;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="badge-row">
+        <span class="badge">Database Engineering Spec</span>
+        <span class="badge badge-cyan">Supabase & PostgreSQL</span>
+        <span class="badge badge-amber">RLS & Stored Functions</span>
+      </div>
+      <h1>How CampusFood Integrates with Supabase</h1>
+      <p class="subtitle">
+        A complete technical manual explaining the database architecture, connection setup, phone authentication bridging, schema design, stored SQL procedures, and Row-Level Security policies.
+      </p>
+
+      <div class="nav-bar">
+        <a href="bini.html" class="nav-link">← Back to bini.html (System Architecture & Operations)</a>
+      </div>
+    </header>
+
+    <!-- Section 1: Client Setup & Connection Initialization -->
+    <section class="section">
+      <div class="section-header">
+        <span class="section-num">1</span>
+        <h2>Client Initialization & Environment Configuration</h2>
+      </div>
+
+      <p>
+        The frontend connects to Supabase through the official <code>@supabase/supabase-js</code> SDK. The connection logic is isolated cleanly in <code>src/lib/supabase.js</code>:
+      </p>
+
+      <pre class="code-block"><span class="sql-keyword">import</span> { createClient } <span class="sql-keyword">from</span> <span class="sql-string">'@supabase/supabase-js'</span>;
+
+<span class="sql-keyword">const</span> supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+<span class="sql-keyword">const</span> supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+<span class="sql-comment">// Validates whether the developer/buyer has added credentials</span>
+<span class="sql-keyword">export const</span> isSupabaseConfigured = Boolean(supabaseUrl &amp;&amp; supabaseAnonKey);
+
+<span class="sql-comment">// Instantiates client with persistent local session storage</span>
+<span class="sql-keyword">export const</span> supabase = isSupabaseConfigured
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: <span class="sql-keyword">true</span>,      <span class="sql-comment">// Stores auth token in browser localStorage</span>
+        autoRefreshToken: <span class="sql-keyword">true</span>,    <span class="sql-comment">// Automatically refreshes expired JWT tokens</span>
+      },
+    })
+  : <span class="sql-keyword">null</span>;</pre>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">🔐 Session Persistence (<code>persistSession: true</code>)</div>
+          <p class="card-text">
+            Saves the authenticated user's session securely in browser local storage. When a student or kitchen manager refreshes the page or re-opens the PWA app, they stay logged in without re-entering credentials.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-title">🛡️ Graceful Configuration Fallback</div>
+          <p class="card-text">
+            If environment variables are missing during initial preview or setup, <code>isSupabaseConfigured</code> returns <code>false</code>. Instead of crashing the React application with a white screen, the app displays a helpful warning guide.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Phone Authentication Architecture -->
+    <section class="section">
+      <div class="section-header">
+        <span class="section-num">2</span>
+        <h2>Phone Authentication Bridging Architecture</h2>
+      </div>
+
+      <p>
+        Students register and log in using their <strong>phone number</strong> and password. Because Supabase Auth natively issues JWT tokens and sessions against an email-based identity engine, the application employs a deterministic phone-to-synthetic-email bridge (<code>src/lib/auth.js</code>):
+      </p>
+
+      <pre class="code-block"><span class="sql-keyword">const</span> EMAIL_DOMAIN = <span class="sql-string">'campusfood.com'</span>;
+
+<span class="sql-comment">// Strips non-digits so formats like "+251-912-345678" become "251912345678"</span>
+<span class="sql-keyword">export function</span> <span class="sql-function">normalizePhoneNumber</span>(phone) {
+  <span class="sql-keyword">return</span> phone.replace(<span class="sql-string">/[^\d+]/g</span>, <span class="sql-string">''</span>).trim();
+}
+
+<span class="sql-comment">// Generates synthetic identity: "0912345678@campusfood.com"</span>
+<span class="sql-keyword">export function</span> <span class="sql-function">fakeEmailFromPhone</span>(phone) {
+  <span class="sql-keyword">const</span> normalized = normalizePhoneNumber(phone);
+  <span class="sql-keyword">return</span> <span class="sql-string">`${normalized}@${EMAIL_DOMAIN}`</span>;
+}</pre>
+
+      <h3>How the Auth Flow Works:</h3>
+      <div class="step-item">
+        <div class="step-badge">1</div>
+        <div>
+          <strong>User Inputs Phone & Password:</strong> On the login/signup screen (<code>src/pages/AuthPage.jsx</code>), the student enters their campus phone number (e.g. <code>0912345678</code>).
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-badge">2</div>
+        <div>
+          <strong>Synthetic Auth Call:</strong> <code>AuthContext.jsx</code> converts the phone to <code>0912345678@campusfood.com</code> and calls <code>supabase.auth.signUp()</code> or <code>supabase.auth.signInWithPassword()</code>.
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-badge">3</div>
+        <div>
+          <strong>Public Profile Provisioning:</strong> On signup, <code>ensureProfileRow()</code> automatically upserts a row in <code>public.users</code> linked to the Supabase <code>auth.users.id</code> UUID with the user's phone number.
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-badge">4</div>
+        <div>
+          <strong>Real-Time Session Listener:</strong> <code>supabase.auth.onAuthStateChange</code> detects logins and logouts instantly, loading the student profile and syncing UI permissions.
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 3: Database Tables & Schema Design -->
+    <section class="section">
+      <div class="section-header">
+        <span class="section-num">3</span>
+        <h2>Relational Schema Architecture (PostgreSQL)</h2>
+      </div>
+
+      <p>
+        The complete database schema is defined in <code>supabase-schema.sql</code>. It consists of three primary tables connected through foreign keys with cascading rules:
+      </p>
+
+      <h3>Table 1: <code>public.users</code> (Student & Manager Profiles)</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Column Name</th>
+              <th>Data Type</th>
+              <th>Constraints & Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="col-name">id</td>
+              <td class="col-type">uuid</td>
+              <td>Primary Key. References <code>auth.users(id) ON DELETE CASCADE</code>.</td>
+            </tr>
+            <tr>
+              <td class="col-name">phone</td>
+              <td class="col-type">text</td>
+              <td>Unique, Not Null. The student's normalized mobile phone number.</td>
+            </tr>
+            <tr>
+              <td class="col-name">name</td>
+              <td class="col-type">text</td>
+              <td>Full student name entered during onboarding.</td>
+            </tr>
+            <tr>
+              <td class="col-name">pickup_point</td>
+              <td class="col-type">text</td>
+              <td>Check Constraint: <code>CHECK (pickup_point IN ('T22', 'T34'))</code>. Designated dorm pickup location.</td>
+            </tr>
+            <tr>
+              <td class="col-name">identity_number</td>
+              <td class="col-type">text</td>
+              <td>Student ID number on campus registry.</td>
+            </tr>
+            <tr>
+              <td class="col-name">is_manager</td>
+              <td class="col-type">boolean</td>
+              <td>Default <code>false</code>. When <code>true</code>, grants kitchen manager & dispatch dashboard access.</td>
+            </tr>
+            <tr>
+              <td class="col-name">onboarding_complete</td>
+              <td class="col-type">boolean</td>
+              <td>Default <code>false</code>. Controls whether student must fill profile before entering dashboard.</td>
+            </tr>
+            <tr>
+              <td class="col-name">subscription_status</td>
+              <td class="col-type">text</td>
+              <td>Check Constraint: <code>CHECK (subscription_status IN ('expired', 'pending', 'active'))</code>.</td>
+            </tr>
+            <tr>
+              <td class="col-name">subscription_end_date</td>
+              <td class="col-type">timestamptz</td>
+              <td>Timestamp when current 30-day meal pass expires.</td>
+            </tr>
+            <tr>
+              <td class="col-name">last_transaction_ref</td>
+              <td class="col-type">text</td>
+              <td>Mobile bank transfer reference code (e.g. Telebirr/CBE transaction ID).</td>
+            </tr>
+            <tr>
+              <td class="col-name">receipt_url</td>
+              <td class="col-type">text</td>
+              <td>Public URL of the uploaded Telebirr or CBE receipt image in Supabase Storage.</td>
+            </tr>
+            <tr>
+              <td class="col-name">payment_rejection_reason</td>
+              <td class="col-type">text</td>
+              <td>Feedback text if manager rejected proof (e.g. "Invalid reference number").</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Table 2: <code>public.menu</code> (Campus Daily Meals)</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Column Name</th>
+              <th>Data Type</th>
+              <th>Constraints & Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="col-name">id</td>
+              <td class="col-type">uuid</td>
+              <td>Primary Key. Default: <code>gen_random_uuid()</code>.</td>
+            </tr>
+            <tr>
+              <td class="col-name">name</td>
+              <td class="col-type">text</td>
+              <td>Name of the meal option (e.g., "Special Enjera with Shiro", "Pasta Bolognese").</td>
+            </tr>
+            <tr>
+              <td class="col-name">meal_type</td>
+              <td class="col-type">text</td>
+              <td>Check Constraint: <code>CHECK (meal_type IN ('Breakfast', 'Lunch', 'Dinner'))</code>.</td>
+            </tr>
+            <tr>
+              <td class="col-name">max_servings</td>
+              <td class="col-type">integer</td>
+              <td>Portion batch limit (e.g. <code>50</code>, or <code>null</code> for unlimited). Prevents over-ordering.</td>
+            </tr>
+            <tr>
+              <td class="col-name">is_sold_out</td>
+              <td class="col-type">boolean</td>
+              <td>Default <code>false</code>. Immediate toggle for kitchen staff to close orders when a pot runs out.</td>
+            </tr>
+            <tr>
+              <td class="col-name">created_at</td>
+              <td class="col-type">timestamptz</td>
+              <td>Default <code>now()</code>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Table 3: <code>public.orders</code> (Student Meal Orders)</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Column Name</th>
+              <th>Data Type</th>
+              <th>Constraints & Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="col-name">id</td>
+              <td class="col-type">uuid</td>
+              <td>Primary Key. Default: <code>gen_random_uuid()</code>.</td>
+            </tr>
+            <tr>
+              <td class="col-name">user_id</td>
+              <td class="col-type">uuid</td>
+              <td>Foreign Key. References <code>public.users(id) ON DELETE CASCADE</code>.</td>
+            </tr>
+            <tr>
+              <td class="col-name">menu_id</td>
+              <td class="col-type">uuid</td>
+              <td>Foreign Key. References <code>public.menu(id) ON DELETE RESTRICT</code> (prevents deleting menu in active orders).</td>
+            </tr>
+            <tr>
+              <td class="col-name">meal_type</td>
+              <td class="col-type">text</td>
+              <td>Check Constraint: <code>CHECK (meal_type IN ('Breakfast', 'Lunch', 'Dinner'))</code>.</td>
+            </tr>
+            <tr>
+              <td class="col-name">order_date</td>
+              <td class="col-type">date</td>
+              <td>Calendar date of service (e.g. <code>2026-10-11</code>).</td>
+            </tr>
+            <tr>
+              <td class="col-name">status</td>
+              <td class="col-type">text</td>
+              <td>Check Constraint: <code>CHECK (status IN ('Pending', 'Packed', 'Arrived', 'Delivered'))</code>.</td>
+            </tr>
+            <tr>
+              <td class="col-name">Unique Constraint</td>
+              <td class="col-type">UNIQUE KEY</td>
+              <td><code>orders_one_per_user_per_meal_per_day (user_id, meal_type, order_date)</code> — Prevents double ordering.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Section 4: Stored SQL Functions & Business Logic -->
+    <section class="section">
+      <div class="section-header">
+        <span class="section-num">4</span>
+        <h2>PostgreSQL Stored Procedures & Logic Functions</h2>
+      </div>
+
+      <p>
+        Rather than relying solely on client-side React code to enforce operational rules, CampusFood embeds critical business logic directly inside PostgreSQL stored procedures:
+      </p>
+
+      <h3>1. Security Definer Manager Check: <code>public.is_manager()</code></h3>
+      <pre class="code-block"><span class="sql-keyword">create or replace function</span> <span class="sql-function">public.is_manager</span>(check_user_id uuid)
+<span class="sql-keyword">returns boolean</span>
+<span class="sql-keyword">language sql</span>
+<span class="sql-keyword">stable security definer</span>
+<span class="sql-keyword">set search_path</span> = public
+<span class="sql-keyword">as</span> $$
+  <span class="sql-keyword">select exists</span> (
+    <span class="sql-keyword">select</span> 1 <span class="sql-keyword">from</span> public.users
+    <span class="sql-keyword">where</span> id = check_user_id <span class="sql-keyword">and</span> is_manager = <span class="sql-keyword">true</span>
+  );
+$$;</pre>
+      <p>
+        <strong>Purpose:</strong> Used across Row-Level Security policies to verify if an authenticated user is an authorized kitchen manager. Because it is marked <code>security definer</code>, it executes safely with elevated rights without exposing the entire table.
+      </p>
+
+      <h3>2. The Time-Window Guardian: <code>public.can_submit_order()</code></h3>
+      <p>
+        This is the most critical function in the system. It enforces that a student cannot order outside of authorized operational hours, even if someone attempts direct REST API injection:
+      </p>
+
+      <pre class="code-block"><span class="sql-keyword">create or replace function</span> <span class="sql-function">public.can_submit_order</span>(
+  check_user_id uuid,
+  requested_menu_id uuid,
+  requested_meal_type text,
+  requested_order_date date
+)
+<span class="sql-keyword">returns boolean</span>
+<span class="sql-keyword">language sql</span>
+<span class="sql-keyword">stable security definer</span>
+<span class="sql-keyword">set search_path</span> = public
+<span class="sql-keyword">as</span> $$
+  <span class="sql-keyword">with</span> server_clock <span class="sql-keyword">as</span> (
+    <span class="sql-comment">-- Converts server time directly to Africa/Addis_Ababa timezone</span>
+    <span class="sql-keyword">select</span> timezone(<span class="sql-string">'Africa/Addis_Ababa'</span>, now()) <span class="sql-keyword">as</span> addis_now
+  ),
+  active_window <span class="sql-keyword">as</span> (
+    <span class="sql-keyword">select</span>
+      <span class="sql-keyword">case</span>
+        <span class="sql-comment">-- 07:00 to 08:00 AM (420 to 480 minutes)</span>
+        <span class="sql-keyword">when</span> ((extract(hour <span class="sql-keyword">from</span> addis_now)::int * 60) + extract(minute <span class="sql-keyword">from</span> addis_now)::int) &gt;= 7 * 60
+          <span class="sql-keyword">and</span> ((extract(hour <span class="sql-keyword">from</span> addis_now)::int * 60) + extract(minute <span class="sql-keyword">from</span> addis_now)::int) &lt; 8 * 60
+          <span class="sql-keyword">then</span> <span class="sql-string">'Breakfast'</span>
+        <span class="sql-comment">-- 11:00 AM to 01:00 PM (660 to 780 minutes)</span>
+        <span class="sql-keyword">when</span> ((extract(hour <span class="sql-keyword">from</span> addis_now)::int * 60) + extract(minute <span class="sql-keyword">from</span> addis_now)::int) &gt;= 11 * 60
+          <span class="sql-keyword">and</span> ((extract(hour <span class="sql-keyword">from</span> addis_now)::int * 60) + extract(minute <span class="sql-keyword">from</span> addis_now)::int) &lt; 13 * 60
+          <span class="sql-keyword">then</span> <span class="sql-string">'Lunch'</span>
+        <span class="sql-comment">-- 05:00 to 07:00 PM (1020 to 1140 minutes)</span>
+        <span class="sql-keyword">when</span> ((extract(hour <span class="sql-keyword">from</span> addis_now)::int * 60) + extract(minute <span class="sql-keyword">from</span> addis_now)::int) &gt;= 17 * 60
+          <span class="sql-keyword">and</span> ((extract(hour <span class="sql-keyword">from</span> addis_now)::int * 60) + extract(minute <span class="sql-keyword">from</span> addis_now)::int) &lt; 19 * 60
+          <span class="sql-keyword">then</span> <span class="sql-string">'Dinner'</span>
+        <span class="sql-keyword">else null</span>
+      <span class="sql-keyword">end as</span> active_meal_type,
+      addis_now::date <span class="sql-keyword">as</span> service_date
+    <span class="sql-keyword">from</span> server_clock
+  )
+  <span class="sql-keyword">select exists</span> (
+    <span class="sql-keyword">select</span> 1
+    <span class="sql-keyword">from</span> public.users u
+    <span class="sql-keyword">join</span> public.menu m <span class="sql-keyword">on</span> m.id = requested_menu_id
+    <span class="sql-keyword">cross join</span> active_window aw
+    <span class="sql-keyword">where</span> u.id = check_user_id
+      <span class="sql-keyword">and</span> u.subscription_status = <span class="sql-string">'active'</span>
+      <span class="sql-keyword">and</span> u.subscription_end_date &gt; now()
+      <span class="sql-keyword">and</span> m.meal_type = requested_meal_type
+      <span class="sql-keyword">and</span> aw.active_meal_type = requested_meal_type
+      <span class="sql-keyword">and</span> requested_order_date = aw.service_date
+  );
+$$;</pre>
+
+      <div class="callout">
+        <div class="callout-title">Why This Is Important For Buyers</div>
+        <p class="callout-body">
+          It guarantees zero cheating or late orders. A student cannot order lunch at 2:00 PM or breakfast at midnight. The database server rejects any unauthorized insert immediately.
+        </p>
+      </div>
+
+      <h3>3. Auto Timestamp Trigger: <code>public.set_updated_at()</code></h3>
+      <pre class="code-block"><span class="sql-keyword">create or replace function</span> <span class="sql-function">public.set_updated_at</span>()
+<span class="sql-keyword">returns trigger language plpgsql as</span> $$
+<span class="sql-keyword">begin</span>
+  new.updated_at = now();
+  <span class="sql-keyword">return</span> new;
+<span class="sql-keyword">end</span>;
+$$;
+
+<span class="sql-keyword">create trigger</span> orders_set_updated_at <span class="sql-keyword">before update on</span> public.orders
+<span class="sql-keyword">for each row execute function</span> public.set_updated_at();</pre>
+    </section>
+
+    <!-- Section 5: Row-Level Security Policies -->
+    <section class="section">
+      <div class="section-header">
+        <span class="section-num">5</span>
+        <h2>Row-Level Security (RLS) Policies Breakdown</h2>
+      </div>
+
+      <p>
+        Row-Level Security (RLS) is enabled on all tables (<code>ALTER TABLE ... ENABLE ROW LEVEL SECURITY</code>). This guarantees multi-tenant security:
+      </p>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Target Table</th>
+              <th>Operation</th>
+              <th>Policy Rule Summary</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="col-name">public.users</td>
+              <td><code>SELECT</code></td>
+              <td>Users can only view their own row (<code>auth.uid() = id</code>), OR the viewer is a verified manager (<code>is_manager(auth.uid())</code>).</td>
+            </tr>
+            <tr>
+              <td class="col-name">public.users</td>
+              <td><code>UPDATE</code></td>
+              <td>Students can update their own onboarding info; managers can update subscription statuses and rejection notes.</td>
+            </tr>
+            <tr>
+              <td class="col-name">public.menu</td>
+              <td><code>SELECT</code></td>
+              <td>Open to all authenticated students and managers (<code>true</code>).</td>
+            </tr>
+            <tr>
+              <td class="col-name">public.menu</td>
+              <td><code>INSERT / UPDATE / DELETE</code></td>
+              <td>Restricted strictly to managers (<code>public.is_manager(auth.uid())</code>). Students cannot tamper with menu items.</td>
+            </tr>
+            <tr>
+              <td class="col-name">public.orders</td>
+              <td><code>SELECT</code></td>
+              <td>A student can only view their own orders; managers can view all orders across all students.</td>
+            </tr>
+            <tr>
+              <td class="col-name">public.orders</td>
+              <td><code>INSERT</code></td>
+              <td>Only permitted if <code>public.can_submit_order(...)</code> returns <code>true</code> (active subscription + valid time window).</td>
+            </tr>
+            <tr>
+              <td class="col-name">public.orders</td>
+              <td><code>UPDATE / DELETE</code></td>
+              <td>Only managers can update order status (e.g. from <code>Packed</code> to <code>Arrived</code>).</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Section 6: Frontend Query Operations -->
+    <section class="section">
+      <div class="section-header">
+        <span class="section-num">6</span>
+        <h2>Frontend Database Query Operations</h2>
+      </div>
+
+      <p>
+        Here are the exact queries executed by the frontend components:
+      </p>
+
+      <h3>A. Loading Student Dashboard (Parallel Promise Query)</h3>
+      <pre class="code-block"><span class="sql-comment">// In src/pages/StudentDashboardPage.jsx</span>
+<span class="sql-keyword">const</span> [menuResult, orderResult] = <span class="sql-keyword">await</span> Promise.all([
+  supabase
+    .from(<span class="sql-string">'menu'</span>)
+    .select(<span class="sql-string">'*'</span>)
+    .eq(<span class="sql-string">'meal_type'</span>, focusedMeal)
+    .order(<span class="sql-string">'name'</span>),
+  supabase
+    .from(<span class="sql-string">'orders'</span>)
+    .select(<span class="sql-string">'id, status, menu:menu_id(name)'</span>)
+    .eq(<span class="sql-string">'user_id'</span>, profile.id)
+    .eq(<span class="sql-string">'meal_type'</span>, focusedMeal)
+    .eq(<span class="sql-string">'order_date'</span>, mealContext.focusDate)
+    .maybeSingle(),
+]);</pre>
+
+      <h3>B. Submitting an Order</h3>
+      <pre class="code-block"><span class="sql-comment">// In src/pages/StudentDashboardPage.jsx</span>
+<span class="sql-keyword">await</span> supabase.from(<span class="sql-string">'orders'</span>).insert({
+  user_id: profile.id,
+  menu_id: food.id,
+  meal_type: focusedMeal,
+  order_date: mealContext.focusDate,
+});</pre>
+
+      <h3>C. Manager Bulk Dispatch Action (Mark Building Arrived)</h3>
+      <pre class="code-block"><span class="sql-comment">// In src/pages/ManagerDashboardPage.jsx</span>
+<span class="sql-keyword">await</span> supabase
+  .from(<span class="sql-string">'orders'</span>)
+  .update({ status: <span class="sql-string">'Arrived'</span> })
+  .in(<span class="sql-string">'id'</span>, orderIds); <span class="sql-comment">// Updates all orders for Dorm T22 or T34 in one batch</span></pre>
+
+      <h3>D. Manager Approving 30-Day Subscription</h3>
+      <pre class="code-block"><span class="sql-comment">// In src/pages/ManagerDashboardPage.jsx</span>
+<span class="sql-keyword">const</span> nextEndDate = addDays(<span class="sql-keyword">new</span> Date(), 30).toISOString();
+
+<span class="sql-keyword">await</span> supabase
+  .from(<span class="sql-string">'users'</span>)
+  .update({
+    subscription_status: <span class="sql-string">'active'</span>,
+    subscription_end_date: nextEndDate,
+    payment_rejection_reason: <span class="sql-keyword">null</span>,
+  })
+  .eq(<span class="sql-string">'id'</span>, studentId);</pre>
+    </section>
+
+    <!-- Section 7: Database Deployment & Setup Instructions -->
+    <section class="section">
+      <div class="section-header">
+        <span class="section-num">7</span>
+        <h2>How a Buyer Sets Up the Database in 5 Minutes</h2>
+      </div>
+
+      <div class="workflow">
+        <div class="step-item">
+          <div class="step-badge">1</div>
+          <div>
+            <strong>Create a Supabase Project:</strong> Go to <a href="https://supabase.com" target="_blank" style="color:var(--primary); font-weight:600;">supabase.com</a>, create an organization, and create a new project.
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-badge">2</div>
+          <div>
+            <strong>Run the SQL Script:</strong> In the Supabase Dashboard, open the <strong>SQL Editor</strong>, paste the complete contents of <code>supabase-schema.sql</code>, and click <strong>Run</strong>. All tables, functions, indexes, and RLS policies will be created automatically.
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-badge">3</div>
+          <div>
+            <strong>Copy API Keys:</strong> Go to <strong>Project Settings → API</strong>. Copy the <code>Project URL</code> and <code>anon public key</code>.
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-badge">4</div>
+          <div>
+            <strong>Configure <code>.env</code>:</strong> In the application root, create a <code>.env</code> file:
+            <pre class="code-block">VITE_SUPABASE_URL=https://your-project-id.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</pre>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-badge">5</div>
+          <div>
+            <strong>Create First Manager Account:</strong> Sign up through the app UI with your manager phone number. Then in Supabase <strong>Table Editor → users</strong>, toggle <code>is_manager</code> to <code>TRUE</code>. You now have full manager administrative access!
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="doc-footer">
+      <div>CampusFood Database Engineering & Supabase Manual (hdbw.html)</div>
+      <div>Pair with <strong>bini.html</strong> for complete commercial & architecture documentation</div>
+    </footer>
+  </div>
+
+</body>
+</html>

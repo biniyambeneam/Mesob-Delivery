@@ -1,0 +1,129 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #18210f;
+  background:
+    radial-gradient(circle at top left, rgba(234, 179, 8, 0.18), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(22, 101, 52, 0.12), transparent 30%),
+    #f8f5ea;
+  font-family: 'Outfit', sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  touch-action: manipulation;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+@keyframes soft-pulse-glow {
+  0%, 100% {
+    background-color: rgba(5, 150, 105, 0.92);
+    box-shadow: 0 0 0 rgba(5, 150, 105, 0.18), 0 0 15px rgba(5, 150, 105, 0.38);
+  }
+
+  50% {
+    background-color: rgba(4, 120, 87, 1);
+    box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.08), 0 0 24px rgba(5, 150, 105, 0.52);
+  }
+}
+
+@keyframes live-dot-blink {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.35;
+    transform: scale(0.82);
+  }
+}
+
+@keyframes soft-bounce-callout {
+  0%, 100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-transparent text-slate-900;
+  }
+
+  button {
+    @apply min-h-[44px];
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply text-slate-950;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-3xl border border-emerald-950/10 bg-white/80 shadow-[0_18px_60px_-24px_rgba(21,128,61,0.35)] backdrop-blur;
+  }
+
+  .soft-panel {
+    @apply rounded-2xl border border-slate-200/80 bg-slate-50/80;
+  }
+
+  .btn-primary {
+    @apply inline-flex min-h-12 items-center justify-center rounded-2xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-emerald-400;
+  }
+
+  .btn-secondary {
+    @apply inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-emerald-200 hover:text-emerald-700;
+  }
+
+  .input {
+    @apply w-full min-h-12 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10;
+  }
+
+  .animate-soft-pulse-glow {
+    animation: soft-pulse-glow 2.2s ease-in-out infinite;
+  }
+
+  .animate-live-dot {
+    animation: live-dot-blink 1s ease-in-out infinite;
+  }
+
+  .animate-soft-bounce {
+    animation: soft-bounce-callout 1.6s ease-in-out infinite;
+  }
+}

@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusFood — System Architecture & Operational Walkthrough</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #047857;
+      --primary-light: #ecfdf5;
+      --primary-dark: #064e3b;
+      --primary-accent: #10b981;
+      --amber-subtle: #fef3c7;
+      --amber-dark: #92400e;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+      --bg: #f8f5ea;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: radial-gradient(circle at top left, rgba(234, 179, 8, 0.12), transparent 28%),
+                  radial-gradient(circle at bottom right, rgba(22, 101, 52, 0.08), transparent 30%),
+                  var(--bg);
+      color: var(--slate-900);
+      line-height: 1.6;
+      padding: 40px 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1040px;
+      margin: 0 auto;
+      background: #ffffff;
+      border: 1px solid rgba(4, 120, 87, 0.15);
+      border-radius: 28px;
+      padding: 50px;
+      box-shadow: 0 25px 60px -15px rgba(4, 120, 87, 0.12), 0 0 1px 1px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Header styling */
+    .header {
+      border-bottom: 2px solid var(--slate-100);
+      padding-bottom: 35px;
+      margin-bottom: 40px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--primary);
+      background-color: var(--primary-light);
+      border: 1px solid rgba(4, 120, 87, 0.2);
+      border-radius: 9999px;
+      margin-bottom: 16px;
+    }
+
+    .badge-amber {
+      color: var(--amber-dark);
+      background-color: var(--amber-subtle);
+      border-color: rgba(180, 83, 9, 0.2);
+    }
+
+    h1 {
+      font-size: 38px;
+      font-weight: 800;
+      color: var(--slate-900);
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      font-size: 18px;
+      color: var(--slate-600);
+      font-weight: 400;
+      max-width: 820px;
+    }
+
+    /* Section styling */
+    .section {
+      margin-bottom: 50px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 1.5px solid var(--slate-100);
+    }
+
+    .section-num {
+      background: var(--primary);
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 700;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    h2 {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--slate-900);
+      letter-spacing: -0.02em;
+    }
+
+    h3 {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--slate-800);
+      margin-top: 24px;
+      margin-bottom: 12px;
+    }
+
+    p {
+      color: var(--slate-700);
+      margin-bottom: 16px;
+      font-size: 15.5px;
+    }
+
+    /* Grid & Cards */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      margin: 20px 0;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+      margin: 20px 0;
+    }
+
+    .card {
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 18px;
+      padding: 24px;
+      transition: all 0.2s ease;
+    }
+
+    .card:hover {
+      border-color: rgba(4, 120, 87, 0.4);
+      box-shadow: 0 10px 25px -8px rgba(4, 120, 87, 0.08);
+    }
+
+    .card-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--slate-900);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-text {
+      font-size: 14px;
+      color: var(--slate-600);
+      margin-bottom: 0;
+    }
+
+    /* Tables */
+    .table-container {
+      overflow-x: auto;
+      border: 1px solid var(--slate-200);
+      border-radius: 16px;
+      margin: 20px 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 14.5px;
+    }
+
+    th {
+      background-color: var(--slate-100);
+      color: var(--slate-800);
+      font-weight: 700;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--slate-200);
+    }
+
+    td {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--slate-100);
+      color: var(--slate-700);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background-color: #fafbfc;
+    }
+
+    /* Workflow Pipeline */
+    .workflow {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin: 24px 0;
+    }
+
+    .step-item {
+      display: flex;
+      gap: 18px;
+      background: #ffffff;
+      border: 1px solid var(--slate-200);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    }
+
+    .step-number {
+      flex-shrink: 0;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--primary-light);
+      border: 1.5px solid var(--primary);
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .step-content {
+      flex: 1;
+    }
+
+    .step-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--slate-900);
+      margin-bottom: 4px;
+    }
+
+    .step-desc {
+      font-size: 14px;
+      color: var(--slate-600);
+      margin-bottom: 0;
+    }
+
+    /* Code Tree */
+    .code-tree {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      padding: 24px;
+      border-radius: 16px;
+      overflow-x: auto;
+      white-space: pre;
+      margin: 20px 0;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.5);
+    }
+
+    .code-tree .folder {
+      color: #38bdf8;
+      font-weight: 600;
+    }
+
+    .code-tree .comment {
+      color: #94a3b8;
+    }
+
+    .code-tree .highlight {
+      color: #4ade80;
+    }
+
+    .file-list-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 24px;
+      font-size: 13.5px;
+    }
+
+    .file-list-table th {
+      background-color: var(--slate-100);
+      color: var(--slate-800);
+      padding: 12px 16px;
+      font-weight: 700;
+      text-align: left;
+      border-bottom: 2px solid var(--slate-200);
+    }
+
+    .file-list-table td {
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--slate-100);
+      vertical-align: middle;
+    }
+
+    .file-list-table tr:hover td {
+      background-color: #fafbfc;
+    }
+
+    .file-path {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--primary-dark);
+    }
+
+    /* Status Pills */
+    .pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .pill-pending { background: #fef3c7; color: #b45309; }
+    .pill-packed { background: #e0f2fe; color: #0369a1; }
+    .pill-arrived { background: #fae8ff; color: #86198f; }
+    .pill-delivered { background: #dcfce7; color: #15803d; }
+
+    /* Highlights Banner */
+    .callout {
+      background: #f0fdf4;
+      border-left: 4px solid var(--primary-accent);
+      padding: 20px;
+      border-radius: 12px;
+      margin: 24px 0;
+    }
+
+    .callout-title {
+      font-weight: 700;
+      color: var(--primary-dark);
+      font-size: 16px;
+      margin-bottom: 6px;
+    }
+
+    .callout-body {
+      font-size: 14.5px;
+      color: #166534;
+      margin-bottom: 0;
+    }
+
+    /* Footer */
+    .doc-footer {
+      border-top: 1px solid var(--slate-200);
+      padding-top: 25px;
+      margin-top: 50px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--slate-600);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+        padding: 0;
+      }
+      .container {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        max-width: 100%;
+      }
+      .code-tree {
+        background: #f8fafc;
+        color: #0f172a;
+        border: 1px solid #cbd5e1;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        padding: 24px 18px;
+        border-radius: 20px;
+      }
+      h1 {
+        font-size: 28px;
+      }
+      .grid-2, .grid-3 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <span class="badge">CampusFood Commercial Documentation</span>
+      <span class="badge badge-amber">Production Architecture</span>
+      <h1>System Architecture & Operational Walkthrough</h1>
+      <p class="subtitle">
+        A comprehensive guide covering the technical architecture, business workflows, operational mechanics, and codebase organization of CampusFood for prospective buyers and operators.
+      </p>
+    </header>
+
+    <!-- Section 1: Executive Overview & Value Proposition -->
+    <section class="section">
+      <div class="section-header">
+        <span class="section-num">1</span>
+        <h2>Executive Summary & Commercial Value</h2>
+      </div>
+      <p>
+        <strong>CampusFood</strong> is a specialized, turnkey meal subscription and delivery platform engineered specifically for university campuses, student housing blocks, and institutional catering operations.
+      </p>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-title">💰 Predictable Cash Flow</div>
+          <p class="card-text">
+            Transforms volatile daily meal transactions into upfront 30-day subscriptions. Customers pay before service begins, securing working capital for food inventory.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-title">🍲 Zero Food Waste</div>
+          <p class="card-text">
+            Kitchen orders are strictly locked to predefined service windows. Chefs prepare exact batch quantities based on aggregated student orders, eliminating unsold surplus.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-title">🏢 Clustered Batch Delivery</div>
+          <p class="card-text">
+            Dispatches meals directly to designated campus dorm buildings (e.g. T22, T34) in consolidated runs rather than individual home deliveries, slashing delivery logistics costs.
+          </p>
+        </div>
+      </div>
+
+      <div class="callout">
+        <div class="callout-title">Key Commercial Advantage: Zero 30% App Store Taxes</div>
+        <p class="callout-body">
+          Built as an installable Progressive Web App (PWA). Students install it straight from the browser on iOS and Android with no app store downloads, avoiding Apple/Google's 15%–30% in-app revenue cuts and third-party delivery marketplace commissions.
+        </p>
+      </div>
+    </section>
+
+    <!-- Section 2: Technology Stack -->
+    <section class="section">
+      <div class="section-header">
+        <span class="section-num">2</span>
+        <h2>Technical Stack & Infrastructure</h2>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Layer</th>
+              <th>Technologies</th>
+              <th>Architectural Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Frontend Core</strong></td>
+              <td>React 19, Vite</td>
+              <td>Ultra-fast Single Page Application (SPA), lightning-fast page transitions, and responsive reactivity.</td>
+            </tr>
+            <tr>
+              <td><strong>Design & Styling</strong></td>
+              <td>Tailwind CSS, Lucide Icons</td>
+              <td>Clean, accessible, mobile-first interface optimized for one-thumb smartphone navigation.</td>
+            </tr>
+            <tr>
+              <td><strong>Database & Security</strong></td>
+              <td>Supabase (PostgreSQL 15+)</td>
+              <td>Enterprise-grade relational database with native Row-Level Security (RLS) policies and stored functions.</td>
+            </tr>
+            <tr>
+              <td><strong>Authentication</strong></td>
+              <td>Phone-keyed Supabase Auth</td>
+              <td>Frictionless student registration using normalized phone numbers; session auto-refresh and persistence.</td>
+            </tr>
+            <tr>
+              <td><strong>Mobile Deployment</strong></td>
+              <td>Vite-Plugin-PWA, Service Workers</td>
+              <td>Offline manifest, splash icons, and home-screen install banners for iOS & Android without native app stores.</td>
+            </tr>
+            <tr>
+              <td><strong>Localization</strong></td>
+              <td>Dual-Language (English & Amharic)</td>
+              <td>Context-aware instant language toggle for regional campus market adoption.</td>
+            </tr>
+            <tr>
+              <td><strong>Time Engine</strong></td>
+              <td><code>date-fns-tz</code> (Africa/Addis Ababa)</td>
+              <td>Server and client synchronized meal window enforcement based on campus local operational time.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Section 3: Dual-Role Operational Walkthrough -->
+    <section class="section">
+      <div class="section-header">
+        <span class="section-num">3</span>
+        <h2>Operational Walkthrough: The User Journeys</h2>
+      </div>
+
+      <p>
+        The platform segregates access automatically into two dedicated workflows based on the user's role flag (<code>is_manager</code>) in the database.
+      </p>
+
+      <h3>A. Student (Customer / Subscriber) Journey</h3>
+      <div class="workflow">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-title">Instant Phone Authentication</div>
+            <div class="step-desc">Students register or sign in with their phone number and password. No complex email confirmations are required.</div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-title">One-Time Campus Onboarding</div>
+            <div class="step-desc">First-time users enter their Full Name, Student Identity Number, and select their primary dorm pickup point (e.g., Building T22 or T34).</div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <div class="step-title">Monthly Subscription Pass & Payment Proof</div>
+            <div class="step-desc">
+              Students transfer the monthly meal fee via bank transfer or mobile banking (e.g., Telebirr / CBE) and input the <strong>Transaction Reference Number</strong>. The pass is queued for manager verification.
+            </div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <div class="step-title">Time-Locked Meal Selection</div>
+            <div class="step-desc">
+              During active meal windows, students select their single preferred meal from the day's menu. An automated database constraint strictly prevents double-ordering:
+              <br><br>
+              • <strong>Breakfast Window:</strong> 07:00 – 08:00<br>
+              • <strong>Lunch Window:</strong> 11:00 – 13:00<br>
+              • <strong>Dinner Window:</strong> 17:00 – 19:00
+            </div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-number">5</div>
+          <div class="step-content">
+            <div class="step-title">Real-Time Delivery & Dorm Arrival Alert</div>
+            <div class="step-desc">
+              The student tracks their meal status: 
+              <span class="pill pill-pending">Pending</span> → 
+              <span class="pill pill-packed">Packed</span> → 
+              <span class="pill pill-arrived">Arrived</span> → 
+              <span class="pill pill-delivered">Delivered</span>.
+              When food reaches their dorm pickup station, an instant pop-up banner alerts them to collect it.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>B. Kitchen Manager & Dispatch Operator Journey</h3>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">👨‍🍳 1. Kitchen View (Preparation Totals)</div>
+          <p class="card-text">
+            Aggregates live counts across all student orders for the active meal slot. Chefs see consolidated dish summaries (e.g., <em>"52 Enjera with Shiro, 38 Pasta Bolognese"</em>) with zero manual tallying.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📦 2. Packing & Dispatch Workspace</div>
+          <p class="card-text">
+            Orders are grouped by dorm building (T22 Female Dorm / T34 Male Dorm). Includes packing checklists, <em>"Mark All Packed"</em>, and <em>"Dispatch to Building"</em> triggers that alert all waiting students.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📋 3. Menu Management Suite</div>
+          <p class="card-text">
+            Full control to add, edit, or delete items offered for Breakfast, Lunch, and Dinner. Changes reflect instantly on student dashboards without needing code deployments.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-title">💳 4. Subscription Verification Queue</div>
+          <p class="card-text">
+            Reviews pending student payment transaction codes. Managers click <strong>Approve</strong> (which automatically extends access by 30 days) or <strong>Reject</strong> with preset error feedback.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 4: Codebase Organization -->
+    <section class="section">
+      <div class="section-header">
+        <span class="section-num">4</span>
+        <h2>Codebase Organization & File Tree</h2>
+      </div>
+
+      <p>
+        The project is structured with strict separation of concerns, dividing business logic, state management, presentation components, and database schemas.
+      </p>
+
+      <pre class="code-tree"><span class="folder">CampusFoodDeliveryApp/</span>
+├── <span class="highlight">bini.html</span>                     <span class="comment"># Commercial & system architecture documentation</span>
+├── <span class="highlight">hdbw.html</span>                     <span class="comment"># Detailed Supabase database integration documentation</span>
+├── <span class="highlight">index.html</span>                    <span class="comment"># HTML entry point, SEO meta tags & PWA header link</span>
+├── <span class="highlight">package.json</span>                  <span class="comment"># Project metadata, dependencies & npm scripts</span>
+├── <span class="highlight">vite.config.js</span>                <span class="comment"># Vite bundler, PWA manifest & server configuration</span>
+├── <span class="highlight">tailwind.config.js</span>            <span class="comment"># Custom typography, colors, and layout utilities</span>
+├── <span class="highlight">supabase-schema.sql</span>           <span class="comment"># Complete PostgreSQL schema, RLS policies & SQL functions</span>
+│
+├── <span class="folder">public/</span>                       <span class="comment"># Static assets & PWA manifest icons</span>
+│   ├── food-delivery.png         <span class="comment"># 192x192 & 512x512 app logo & mobile touch icon</span>
+│   ├── favicon.svg               <span class="comment"># Browser tab icon</span>
+│   └── icons.svg                 <span class="comment"># Reusable SVG sprite icons</span>
+│
+└── <span class="folder">src/</span>
+    ├── <span class="highlight">main.jsx</span>                  <span class="comment"># React root mount file</span>
+    ├── <span class="highlight">App.jsx</span>                   <span class="comment"># Route controller & authentication guards</span>
+    ├── <span class="highlight">index.css</span>                 <span class="comment"># Global styles, fonts, and micro-animations</span>
+    │
+    ├── <span class="folder">components/</span>               <span class="comment"># Modular presentation components</span>
+    │   ├── EmptyState.jsx        <span class="comment"># Styled cards for empty menus or no-order states</span>
+    │   ├── Field.jsx             <span class="comment"># Reusable accessible form input elements</span>
+    │   ├── Footer.jsx            <span class="comment"># Global page footer</span>
+    │   ├── LanguageToggle.jsx    <span class="comment"># English / Amharic language switch button</span>
+    │   ├── LoadingScreen.jsx     <span class="comment"># Branded animated loading splash screen</span>
+    │   ├── MealStatusCard.jsx    <span class="comment"># Current meal schedule & window countdown banner</span>
+    │   ├── OrderCard.jsx         <span class="comment"># Interactive student order card with status indicator</span>
+    │   └── PwaInstallPrompt.jsx  <span class="comment"># In-app native prompt to install PWA on home screen</span>
+    │
+    ├── <span class="folder">context/</span>                  <span class="comment"># Global React State Management</span>
+    │   ├── AuthContext.jsx       <span class="comment"># Supabase session, student profile, roles & auth methods</span>
+    │   ├── AuthContextObject.js  <span class="comment"># React Context definition object</span>
+    │   ├── LanguageContext.jsx   <span class="comment"># Active language state and localized string resolver</span>
+    │   └── useAuth.js            <span class="comment"># Custom hook to consume auth status anywhere</span>
+    │
+    ├── <span class="folder">lib/</span>                      <span class="comment"># Core Business Logic & Infrastructure</span>
+    │   ├── auth.js               <span class="comment"># Phone normalization & simulated email bridging</span>
+    │   ├── subscription.js       <span class="comment"># Subscription status, remaining days, & validity logic</span>
+    │   ├── supabase.js           <span class="comment"># Supabase client instantiation & env validation</span>
+    │   ├── time.js               <span class="comment"># Africa/Addis_Ababa meal window timers & schedule helper</span>
+    │   └── translations.js       <span class="comment"># Complete English and Amharic translation dictionary</span>
+    │
+    └── <span class="folder">pages/</span>                    <span class="comment"># Top-Level Application Views</span>
+        ├── AuthPage.jsx          <span class="comment"># Phone login & signup screen with validation</span>
+        ├── OnboardingPage.jsx    <span class="comment"># Student identity number and dorm building selection</span>
+        ├── StudentDashboardPage.jsx <span class="comment"># Student ordering, live tracking, and payment upload</span>
+        └── ManagerDashboardPage.jsx <span class="comment"># Kitchen counts, building dispatch, menu & subscriptions</span></pre>
+
+      <h3>Line-by-Line File Directory & Technical Roles</h3>
+      <div class="table-container">
+        <table class="file-list-table">
+          <thead>
+            <tr>
+              <th style="width: 28%;">File Path</th>
+              <th style="width: 18%;">Module Category</th>
+              <th>Technical Responsibility</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="file-path">/bini.html</td>
+              <td>Documentation</td>
+              <td>Commercial documentation, operational flows, and architecture specification.</td>
+            </tr>
+            <tr>
+              <td class="file-path">/hdbw.html</td>
+              <td>Documentation</td>
+              <td>Comprehensive database & Supabase integration, RLS rules, and functions manual.</td>
+            </tr>
+            <tr>
+              <td class="file-path">/index.html</td>
+              <td>HTML Entry Point</td>
+              <td>Mount container (<code>#root</code>), FontAwesome icons, PWA touch meta tags, and SEO tags.</td>
+            </tr>
+            <tr>
+              <td class="file-path">/package.json</td>
+              <td>Project Config</td>
+              <td>Declares React 19, Supabase JS SDK, Date-Fns, Lucide, Tailwind, and Vite build scripts.</td>
+            </tr>
+            <tr>
+              <td class="file-path">/vite.config.js</td>
+              <td>Build Config</td>
+              <td>Configures Vite bundler, PWA web manifest, icon assets, and dev server (0.0.0.0:3000).</td>
+            </tr>
+            <tr>
+              <td class="file-path">/tailwind.config.js</td>
+              <td>Design Tokens</td>
+              <td>Color palettes, custom rounded borders, and responsive grid layouts.</td>
+            </tr>
+            <tr>
+              <td class="file-path">/supabase-schema.sql</td>
+              <td>Database Schema</td>
+              <td>PostgreSQL tables (<code>users</code>, <code>menu</code>, <code>orders</code>), RLS policies, indexes, and triggers.</td>
+            </tr>
+            <tr>
+              <td class="file-path">/public/food-delivery.png</td>
+              <td>Asset</td>
+              <td>App logo icon for PWA install splash screens and mobile home screens (192px/512px).</td>
+            </tr>
+            <tr>
+              <td class="file-path">/src/main.jsx</td>
+              <td>Client Entry</td>
+              <td>Bootstraps React 19 DOM rendering with StrictMode and loads global CSS.</td>
+            </tr>
+            <tr>
+              <td class="file-path">/src/App.jsx</td>
+              <td>Routing Controller</td>
+              <td>Guards routes (<code>/auth</code>, <code>/onboarding</code>, <code>/dashboard</code>) based on session & role.</td>
+            </tr>
+            <tr>
+              <td class="file-path">/src/index.css</td>
+              <td>Global Styling</td>
+              <td>Tailwind directives, custom button classes, glassmorphism panels, and glow animations.</td>
+            </tr>
+            <tr>
+              <td class="file-path">/src/context/AuthContext.jsx</td>
+              <td>State / Auth</td>
+              <td>Manages Supabase sessions, phone login/signup, profile caching, and signout cleanup.</td>
+            </tr>
+            <tr>
+              <td class="file-path">/src/context/LanguageContext.jsx</td>
+              <td>State / i18n</td>
+              <td>Provides language state (English/Amharic) and translation lookup across the app.</td>
+            </tr>
+            <tr>
+              <td class="file-path">/src/context/useAuth.js</td>
+              <td>Custom Hook</td>
+              <td>Convenience hook to access user profile, role flags, and auth actions from any component.</td>
+            </tr>
+            <tr>
+              <td class="file-path">/src/lib/supabase.js</td>
+              <td>Database Client</td>
+              <td>Initializes the Supabase client with persistSession and checks environment availability.</td>
+            </tr>
+            <tr>
+              <td class="file-path">/src/lib/auth.js</td>
+              <td>Auth Utilities</td>
+              <td>Normalizes phone numbers and generates deterministic synthetic email handles for Supabase.</td>
+            </tr>
+            <tr>
+              <td class="file-path">/src/lib/subscription.js</td>
+              <td>Business Logic</td>
+              <td>Calculates active subscription status, expiration countdown, and remaining days.</td>
+            </tr>
+            <tr>
+              <td class="file-path">/src/lib/time.js</td>
+              <td>Time Engine</td>
+              <td>Evaluates Addis Ababa timezone clock to determine active meal windows and cutoffs.</td>
+            </tr>
+            <tr>
+              <td class="file-path">/src/lib/translations.js</td>
+              <td>Localization</td>
+              <td>Full bilingual translation dictionary mapping English and Amharic UI labels.</td>
+            </tr>
+            <tr>
+              <td class="file-path">/src/pages/AuthPage.jsx</td>
+              <td>View Screen</td>
+              <td>Student & Manager phone login / account creation form with validation.</td>
+            </tr>
+            <tr>
+              <td class="file-path">/src/pages/OnboardingPage.jsx</td>
+              <td>View Screen</td>
+              <td>New student profile setup form collecting student ID and preferred dorm pickup point.</td>
+            </tr>
+            <tr>
+              <td class="file-path">/src/pages/StudentDashboardPage.jsx</td>
+              <td>View Screen</td>
+              <td>Student portal for ordering meals, viewing order status, and submitting subscription payment proofs.</td>
+            </tr>
+            <tr>
+              <td class="file-path">/src/pages/ManagerDashboardPage.jsx</td>
+              <td>View Screen</td>
+              <td>Manager portal with Kitchen View, Packing/Dispatch, Menu Management, and Subscription Approvals.</td>
+            </tr>
+            <tr>
+              <td class="file-path">/src/components/MealStatusCard.jsx</td>
+              <td>Component</td>
+              <td>Displays current meal window status, next window countdown timer, and service badges.</td>
+            </tr>
+            <tr>
+              <td class="file-path">/src/components/OrderCard.jsx</td>
+              <td>Component</td>
+              <td>Shows active order progress (Pending, Packed, Arrived, Delivered) with visual steps.</td>
+            </tr>
+            <tr>
+              <td class="file-path">/src/components/PwaInstallPrompt.jsx</td>
+              <td>Component</td>
+              <td>Presents one-tap native mobile installation prompt for iOS and Android devices.</td>
+            </tr>
+            <tr>
+              <td class="file-path">/src/components/LanguageToggle.jsx</td>
+              <td>Component</td>
+              <td>One-click toggle button to switch between English and Amharic with smooth transitions.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Section 5: Database & Security Architecture -->
+    <section class="section">
+      <div class="section-header">
+        <span class="section-num">5</span>
+        <h2>Database Integrity & Security Policies</h2>
+      </div>
+
+      <p>
+        The platform enforces business rules at the database level inside PostgreSQL, meaning malicious users cannot bypass client-side rules via automated API scripts:
+      </p>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">🛡️ Row Level Security (RLS)</div>
+          <p class="card-text">
+            Every table (<code>users</code>, <code>menu</code>, <code>orders</code>) has strict RLS enabled. Students can only select and mutate their own data. Only managers can update order statuses or manipulate menu offerings.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-title">⏱️ Stored Function <code>can_submit_order</code></div>
+          <p class="card-text">
+            A PostgreSQL stored function runs on order insert. It verifies that: (1) The user's subscription is active, (2) the current server time in <code>Africa/Addis_Ababa</code> is within the meal's open window, and (3) meal type matches.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-title">🔒 Duplicate Order Prevention</div>
+          <p class="card-text">
+            The database schema enforces a unique constraint <code>orders_one_per_user_per_meal_per_day</code> on <code>(user_id, meal_type, order_date)</code>, making double-ordering physically impossible.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-title">⚡ Automated Timestamps</div>
+          <p class="card-text">
+            Trigger functions (<code>set_updated_at</code>) automatically timestamp all order status modifications and user profile updates for audit accountability.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 6: Buyer Pitch & Commercial Strategy -->
+    <section class="section">
+      <div class="section-header">
+        <span class="section-num">6</span>
+        <h2>Buyer's Commercial Pitch Summary</h2>
+      </div>
+
+      <p>
+        When presenting this software to prospective investors, cafeterias, or campus food vendors, emphasize these five key selling propositions:
+      </p>
+
+      <div class="workflow">
+        <div class="step-item">
+          <div class="step-number">★</div>
+          <div class="step-content">
+            <div class="step-title">1. Upfront Guaranteed Monthly Cash Flow</div>
+            <div class="step-desc">Eliminates daily revenue fluctuations. Caterers receive 30 days of subscription revenue in advance to buy raw goods in bulk at wholesale discounts.</div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-number">★</div>
+          <div class="step-content">
+            <div class="step-title">2. Massive Kitchen Efficiency & Labor Savings</div>
+            <div class="step-desc">The Kitchen View calculates total portion requirements automatically. Cooks prepare exactly what has been ordered before dispatch begins.</div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-number">★</div>
+          <div class="step-content">
+            <div class="step-title">3. Cluster Delivery Economics</div>
+            <div class="step-desc">Instead of sending individual couriers across town, delivery runs are clustered into dorm building drops (e.g. 50 orders delivered to Block T22 in a single cart run).</div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-number">★</div>
+          <div class="step-content">
+            <div class="step-title">4. Zero Commission & 100% Margin Retention</div>
+            <div class="step-desc">No 30% take rates from DoorDash, UberEats, or Deliveroo. The cafeteria keeps 100% of every dollar or birr earned.</div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-number">★</div>
+          <div class="step-content">
+            <div class="step-title">5. Ready for Emerging Campus Markets</div>
+            <div class="step-desc">Equipped with phone registration, manual mobile money transfer reference verification, and bilingual Amharic/English language toggle.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="doc-footer">
+      <div>CampusFood System Architecture & Operations Specification</div>
+      <div>Confidential & Proprietary Documentation • Generated for Commercial Review</div>
+    </footer>
+  </div>
+
+</body>
+</html>
