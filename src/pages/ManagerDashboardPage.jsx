@@ -12,6 +12,7 @@ import {
   Eye,
   Filter,
   Flame,
+  LoaderCircle,
   LogOut,
   MapPin,
   Package,
@@ -121,8 +122,39 @@ export default function ManagerDashboardPage() {
               .order('subscription_end_date', { ascending: true }),
           ]);
 
-        if (ordersResult.error) {
-          throw ordersResult.error;
+        let resolvedOrders = [];
+        if (ordersResult && !ordersResult.error && ordersResult.data) {
+          resolvedOrders = ordersResult.data;
+        } else if (ordersResult?.error && focusedMeal) {
+          // Fallback query without user join, then manual join with users table
+          try {
+            const fallbackQuery = await supabase
+              .from('orders')
+              .select('id, status, meal_type, order_date, created_at, user_id, menu:menu_id(id, name)')
+              .eq('meal_type', focusedMeal)
+              .eq('order_date', mealContext.focusDate)
+              .order('created_at', { ascending: true });
+
+            if (!fallbackQuery.error && fallbackQuery.data) {
+              const userIds = [...new Set(fallbackQuery.data.map((o) => o.user_id).filter(Boolean))];
+              let userMap = {};
+              if (userIds.length > 0) {
+                const { data: usersData } = await supabase
+                  .from('users')
+                  .select('id, name, phone, identity_number, pickup_point')
+                  .in('id', userIds);
+                if (usersData) {
+                  userMap = Object.fromEntries(usersData.map((u) => [u.id, u]));
+                }
+              }
+              resolvedOrders = fallbackQuery.data.map((o) => ({
+                ...o,
+                user: userMap[o.user_id] || null,
+              }));
+            }
+          } catch {
+            // retain empty list if fallback fails
+          }
         }
 
         if (menuResult.error) {
@@ -137,7 +169,7 @@ export default function ManagerDashboardPage() {
           throw activeSubscriptionsResult.error;
         }
 
-        setOrders(ordersResult.data ?? []);
+        setOrders(resolvedOrders);
         setMenuItems(menuResult.data ?? []);
         setPendingSubscriptions(pendingSubscriptionsResult.data ?? []);
         setActiveSubscriptions(activeSubscriptionsResult.data ?? []);

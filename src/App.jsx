@@ -20,7 +20,7 @@ function HomeRedirect() {
     return <Navigate to="/auth" replace />;
   }
 
-  if (!profile?.onboarding_complete) {
+  if (!profile?.is_manager && !profile?.onboarding_complete) {
     return <Navigate to="/onboarding" replace />;
   }
 
@@ -38,7 +38,7 @@ function AuthRoute() {
     return <AuthPage />;
   }
 
-  if (!profile?.onboarding_complete) {
+  if (!profile?.is_manager && !profile?.onboarding_complete) {
     return <Navigate to="/onboarding" replace />;
   }
 
@@ -56,7 +56,7 @@ function OnboardingRoute() {
     return <Navigate to="/auth" replace />;
   }
 
-  if (profile?.onboarding_complete) {
+  if (profile?.is_manager || profile?.onboarding_complete) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -74,7 +74,7 @@ function DashboardRoute() {
     return <Navigate to="/auth" replace />;
   }
 
-  if (!profile?.onboarding_complete) {
+  if (!profile?.is_manager && !profile?.onboarding_complete) {
     return <Navigate to="/onboarding" replace />;
   }
 
