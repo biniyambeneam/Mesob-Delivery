@@ -51,6 +51,11 @@ import OrderCard from '../components/OrderCard.jsx';
 
 const DISMISSED_ARRIVED_ORDER_ID_KEY = 'dismissed_arrived_order_id';
 
+const CAFETERIA_CBE_ACCOUNT = import.meta.env.VITE_CAFETERIA_CBE_ACCOUNT || '1000690418917';
+const CAFETERIA_CBE_NAME = import.meta.env.VITE_CAFETERIA_CBE_NAME || 'CampusFood Finance (CBE)';
+const CAFETERIA_TELEBIRR_PHONE = import.meta.env.VITE_CAFETERIA_TELEBIRR_PHONE || '0950271983';
+const CAFETERIA_TELEBIRR_NAME = import.meta.env.VITE_CAFETERIA_TELEBIRR_NAME || 'CampusFood Finance';
+
 async function compressReceiptImage(file, maxWidth = 1200, quality = 0.8) {
   return new Promise((resolve) => {
     if (!file || !file.type?.startsWith('image/')) {
@@ -805,12 +810,12 @@ export default function StudentDashboardPage() {
                     <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 flex items-center justify-between gap-2">
                       <div className="min-w-0">
                         <span className="text-[10px] font-bold text-slate-500 uppercase block">CBE Account</span>
-                        <span className="text-xs font-bold text-slate-900 block select-all">1000690418917</span>
-                        <span className="text-[10px] text-slate-500 truncate block">Biniyam Yimen Tilahun</span>
+                        <span className="text-xs font-bold text-slate-900 block select-all">{CAFETERIA_CBE_ACCOUNT}</span>
+                        <span className="text-[10px] text-slate-500 truncate block">{CAFETERIA_CBE_NAME}</span>
                       </div>
                       <button
                         type="button"
-                        onClick={() => handleCopyAccount('1000690418917', 'cbe')}
+                        onClick={() => handleCopyAccount(CAFETERIA_CBE_ACCOUNT, 'cbe')}
                         className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition shadow-2xs"
                       >
                         {copiedBank === 'cbe' ? 'Copied!' : 'Copy'}
@@ -821,12 +826,12 @@ export default function StudentDashboardPage() {
                     <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 flex items-center justify-between gap-2">
                       <div className="min-w-0">
                         <span className="text-[10px] font-bold text-slate-500 uppercase block">Telebirr Phone</span>
-                        <span className="text-xs font-bold text-slate-900 block select-all">0950271983</span>
-                        <span className="text-[10px] text-slate-500 truncate block">Biniam</span>
+                        <span className="text-xs font-bold text-slate-900 block select-all">{CAFETERIA_TELEBIRR_PHONE}</span>
+                        <span className="text-[10px] text-slate-500 truncate block">{CAFETERIA_TELEBIRR_NAME}</span>
                       </div>
                       <button
                         type="button"
-                        onClick={() => handleCopyAccount('0950271983', 'telebirr')}
+                        onClick={() => handleCopyAccount(CAFETERIA_TELEBIRR_PHONE, 'telebirr')}
                         className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition shadow-2xs"
                       >
                         {copiedBank === 'telebirr' ? 'Copied!' : 'Copy'}
@@ -1607,12 +1612,12 @@ export default function StudentDashboardPage() {
                       <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 flex items-center justify-between gap-2">
                         <div className="min-w-0">
                           <span className="text-[10px] font-bold text-slate-500 uppercase block">CBE Account</span>
-                          <span className="text-xs font-bold text-slate-900 block select-all">1000690418917</span>
-                          <span className="text-[10px] text-slate-500 truncate block">Biniyam Yimen Tilahun</span>
+                          <span className="text-xs font-bold text-slate-900 block select-all">{CAFETERIA_CBE_ACCOUNT}</span>
+                          <span className="text-[10px] text-slate-500 truncate block">{CAFETERIA_CBE_NAME}</span>
                         </div>
                         <button
                           type="button"
-                          onClick={() => handleCopyAccount('1000690418917', 'cbe')}
+                          onClick={() => handleCopyAccount(CAFETERIA_CBE_ACCOUNT, 'cbe')}
                           className="px-2 py-1 rounded-md text-[10px] font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
                         >
                           {copiedBank === 'cbe' ? 'Copied!' : 'Copy'}
@@ -1623,12 +1628,12 @@ export default function StudentDashboardPage() {
                       <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 flex items-center justify-between gap-2">
                         <div className="min-w-0">
                           <span className="text-[10px] font-bold text-slate-500 uppercase block">Telebirr Phone</span>
-                          <span className="text-xs font-bold text-slate-900 block select-all">0950271983</span>
-                          <span className="text-[10px] text-slate-500 truncate block">Biniam</span>
+                          <span className="text-xs font-bold text-slate-900 block select-all">{CAFETERIA_TELEBIRR_PHONE}</span>
+                          <span className="text-[10px] text-slate-500 truncate block">{CAFETERIA_TELEBIRR_NAME}</span>
                         </div>
                         <button
                           type="button"
-                          onClick={() => handleCopyAccount('0950271983', 'telebirr')}
+                          onClick={() => handleCopyAccount(CAFETERIA_TELEBIRR_PHONE, 'telebirr')}
                           className="px-2 py-1 rounded-md text-[10px] font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
                         >
                           {copiedBank === 'telebirr' ? 'Copied!' : 'Copy'}
