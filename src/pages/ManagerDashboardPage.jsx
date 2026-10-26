@@ -1,6 +1,34 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { addDays } from 'date-fns';
-import { BadgeCheck, Ban, CheckCircle2, ChefHat, ExternalLink, Eye, LogOut, Package, Plus, RefreshCw, Trash2, Truck, Wallet, X } from 'lucide-react';
+import {
+  AlertCircle,
+  BadgeCheck,
+  Ban,
+  Check,
+  CheckCircle2,
+  ChefHat,
+  Clock3,
+  ExternalLink,
+  Eye,
+  Filter,
+  Flame,
+  LogOut,
+  MapPin,
+  Package,
+  Plus,
+  RefreshCw,
+  ShoppingBag,
+  Sparkles,
+  Trash2,
+  Truck,
+  Upload,
+  UserCheck,
+  UserRound,
+  Utensils,
+  UtensilsCrossed,
+  Wallet,
+  X,
+} from 'lucide-react';
 import LanguageToggle from '../components/LanguageToggle.jsx';
 import { useAuth } from '../context/useAuth.js';
 import { useLanguage } from '../context/LanguageContext.jsx';
@@ -20,7 +48,7 @@ const REJECTION_REASON_OPTIONS = [
 const TABS = [
   { id: 'kitchen', label: 'Kitchen View', icon: ChefHat },
   { id: 'packing', label: 'Packing / Dispatch', icon: Package },
-  { id: 'menu', label: 'Menu Management', icon: Truck },
+  { id: 'menu', label: 'Menu Management', icon: UtensilsCrossed },
   { id: 'subscriptions', label: 'Subscriptions', icon: Wallet },
 ];
 
@@ -32,6 +60,8 @@ const PICKUP_LABELS = {
 export default function ManagerDashboardPage() {
   const { profile, signOut } = useAuth();
   const { t, language } = useLanguage();
+  const isAmharic = language === 'am';
+
   const [mealContext, setMealContext] = useState(() => getMealWindowState());
   const [activeTab, setActiveTab] = useState('kitchen');
   const [orders, setOrders] = useState([]);
@@ -61,7 +91,7 @@ export default function ManagerDashboardPage() {
         if (!silent) setLoading(true);
         setError('');
 
-        // Check and automatically reset sold-out status for meals whose ordering window has closed
+        // Automatically reset sold-out status for meals whose ordering window has closed
         await resetClosedMealSoldOutState(supabase);
 
         const [ordersResult, menuResult, pendingSubscriptionsResult, activeSubscriptionsResult] =
@@ -185,8 +215,6 @@ export default function ManagerDashboardPage() {
   const t34PendingArrivalCount = useMemo(() => {
     return (groupedOrders['T34'] || []).filter((o) => o.status !== 'Arrived').length;
   }, [groupedOrders]);
-
-
 
   const handleMarkAllPacked = async () => {
     const pendingOrderIds = orders
@@ -422,815 +450,1035 @@ export default function ManagerDashboardPage() {
   };
 
   return (
-    <div className="min-h-screen px-2 py-2 pb-28 md:px-6 md:py-8 lg:px-10">
-      <div className="mx-auto max-w-7xl space-y-2 md:space-y-6">
-        <header className="panel w-full px-5 py-6 md:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="rounded-2xl bg-gradient-to-br from-emerald-100 via-white to-amber-100 p-3 text-emerald-800 shadow-sm">
-                  <ChefHat className="h-6 w-6" />
-                </div>
-                <div>
-                  <h1 className="text-4xl font-extrabold tracking-tight text-slate-950">
-                    {profile?.name ? `${t.managerDash} | ${profile.name}` : t.managerDash}
-                  </h1>
-                  <p className="mt-2 text-sm text-slate-600">
-                    {t.managerDesc}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <button type="button" className="btn-secondary" onClick={() => loadDashboard(false)}>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                {t.refresh}
-              </button>
-              <button type="button" className="btn-secondary" onClick={signOut}>
-                <LogOut className="mr-2 h-4 w-4" />
-                {t.signOut}
-              </button>
-              <LanguageToggle />
-            </div>
+    <div className="min-h-screen bg-[#f8f9fa] md:bg-[#f2f2f4] font-campus text-slate-900">
+      {/* ======================================================== */}
+      {/* DESKTOP SIDEBAR NAVIGATION (Hidden on mobile, md:flex)   */}
+      {/* ======================================================== */}
+      <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:bg-white md:border-r md:border-slate-200/80 md:z-30 p-5 shadow-xs">
+        {/* Brand Wordmark & Role Pill */}
+        <div className="px-2 py-2 mb-6">
+          <div className="flex items-center gap-1.5">
+            <span className="text-2xl font-extrabold text-[#08795d] tracking-tight">Campus</span>
+            <span className="text-2xl font-extrabold text-[#d48431] tracking-tight">Food</span>
           </div>
-        </header>
+          <div className="mt-1 flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-md">
+              <ChefHat className="w-3 h-3 text-[#08795d]" />
+              Operations Manager
+            </span>
+          </div>
+        </div>
 
-        <MealStatusCard mealContext={mealContext} />
-
-        <div className="flex flex-wrap gap-3 px-5 md:px-0">
+        {/* Navigation Tabs */}
+        <nav className="space-y-1.5 flex-1" aria-label="Manager Navigation">
           {TABS.map((tab) => {
             const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
 
             return (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`inline-flex items-center rounded-2xl px-4 py-3 text-sm font-semibold transition ${
-                  activeTab === tab.id
-                    ? 'bg-emerald-700 text-white shadow-sm'
-                    : 'border border-slate-200 bg-white text-slate-700 hover:border-emerald-200 hover:text-emerald-700'
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                  isActive
+                    ? 'bg-emerald-50 text-[#08795d] border-l-4 border-[#08795d]'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                 }`}
               >
-                <Icon className="mr-2 h-4 w-4" />
-                {{
-                  kitchen: t.kitchenView,
-                  packing: t.dispatchView,
-                  menu: t.menuMan,
-                  subscriptions: t.subs,
-                }[tab.id] ?? tab.label}
+                <Icon className="w-5 h-5 shrink-0" />
+                <span>
+                  {{
+                    kitchen: t.kitchenView || 'Kitchen View',
+                    packing: t.dispatchView || 'Packing / Dispatch',
+                    menu: t.menuMan || 'Menu Management',
+                    subscriptions: t.subs || 'Subscriptions',
+                  }[tab.id] ?? tab.label}
+                </span>
+
+                {/* Badge counters */}
+                {tab.id === 'kitchen' && orders.length > 0 && (
+                  <span className="ml-auto bg-emerald-100 text-emerald-800 text-[11px] font-bold px-2 py-0.5 rounded-full">
+                    {orders.length}
+                  </span>
+                )}
+
+                {tab.id === 'packing' && pendingOrdersCount > 0 && (
+                  <span className="ml-auto bg-sky-100 text-sky-800 text-[11px] font-bold px-2 py-0.5 rounded-full">
+                    {pendingOrdersCount}
+                  </span>
+                )}
+
+                {tab.id === 'subscriptions' && pendingSubscriptions.length > 0 && (
+                  <span className="ml-auto bg-amber-100 text-amber-800 text-[11px] font-bold px-2 py-0.5 rounded-full animate-pulse">
+                    {pendingSubscriptions.length}
+                  </span>
+                )}
               </button>
             );
           })}
-        </div>
+        </nav>
 
-        {error ? (
-          <div className="w-full rounded-3xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700 md:rounded-2xl md:px-4 md:py-3">
-            {error}
+        {/* Sidebar Footer: Manager identity, language, logout */}
+        <div className="pt-4 border-t border-slate-100 space-y-3">
+          <div className="flex items-center justify-between px-2">
+            <span className="text-xs text-slate-500 font-medium">Language</span>
+            <LanguageToggle />
           </div>
-        ) : null}
 
-        {activeTab === 'kitchen' ? (
-          <section className="panel w-full px-5 py-6 md:p-6">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold">
-                {focusedMeal ? formatTotalsTitle(language, t, focusedMeal) : t.kitchenView}
-              </h2>
-              <p className="mt-1 text-sm text-slate-600">
-                {t.kitchenTotalsDesc}
-              </p>
+          <div className="flex items-center gap-3 px-2 py-1 bg-slate-50 rounded-xl border border-slate-100">
+            <div className="w-8 h-8 rounded-full bg-emerald-700 text-white font-bold flex items-center justify-center shrink-0 text-xs">
+              {profile?.name ? profile.name.charAt(0).toUpperCase() : 'M'}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold text-slate-900 truncate">{profile?.name || 'Manager'}</p>
+              <p className="text-[10px] text-slate-500 truncate">Kitchen Operations</p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={signOut}
+            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>{t.signOut}</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* ======================================================== */}
+      {/* MAIN CONTENT REGION (Offset by sidebar on desktop)      */}
+      {/* ======================================================== */}
+      <div className="md:pl-64 flex flex-col min-h-screen">
+        {/* COMPACT TOP HEADER */}
+        <header className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-slate-200/70 px-4 py-3 sm:px-6">
+          <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
+            {/* Left: Mobile Wordmark & Operations Greeting */}
+            <div>
+              <div className="flex items-center gap-1.5 md:hidden mb-0.5">
+                <span className="text-lg font-extrabold text-[#08795d] tracking-tight">Campus</span>
+                <span className="text-lg font-extrabold text-[#d48431] tracking-tight">Food</span>
+                <span className="text-[10px] font-bold uppercase text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded ml-1">
+                  Ops
+                </span>
+              </div>
+              <h1 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                <span>{t.managerDash || 'Cafeteria Manager'}</span>
+                {profile?.name && (
+                  <span className="text-slate-400 font-normal hidden sm:inline">• {profile.name}</span>
+                )}
+              </h1>
             </div>
 
-            {loading ? (
-              <p className="text-sm text-slate-600">Loading kitchen totals...</p>
-            ) : Object.keys(kitchenTotals).length ? (
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {Object.entries(kitchenTotals).map(([itemName, count]) => {
-                  const matchingMenuItem = menuItems.find(
-                    (m) => m.name === itemName && m.meal_type === focusedMeal
-                  );
-                  const maxServings = matchingMenuItem?.max_servings;
-                  const isSoldOut = Boolean(
-                    matchingMenuItem?.is_sold_out || (maxServings && count >= maxServings)
-                  );
-                  const percentage = maxServings ? Math.min(100, Math.round((count / maxServings) * 100)) : null;
+            {/* Right: Quick Action Buttons & Status */}
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => loadDashboard(false)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-xs transition"
+                title="Refresh dashboard data"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-[#08795d] ${loading ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">{t.refresh}</span>
+              </button>
+
+              <div className="md:hidden">
+                <LanguageToggle />
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* SCROLLABLE MAIN CONTENT WRAPPER */}
+        <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-4 sm:py-6 pb-28 md:pb-12 space-y-5">
+          {/* Error Banner */}
+          {error && (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs sm:text-sm text-rose-700 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+              <div className="flex-1">{error}</div>
+              <button
+                type="button"
+                onClick={() => setError('')}
+                className="text-rose-400 hover:text-rose-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {/* Quick Stats Overview Strip */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {/* Total Orders for Active Window */}
+            <div className="rounded-2xl bg-white border border-slate-200/80 p-3.5 shadow-xs">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                {focusedMeal} Orders
+              </span>
+              <p className="text-2xl font-black text-slate-900 mt-0.5">{orders.length}</p>
+              <span className="text-[10px] text-emerald-700 font-semibold mt-0.5 block">
+                Active Meal Cycle
+              </span>
+            </div>
+
+            {/* Pending Packing */}
+            <div className="rounded-2xl bg-white border border-slate-200/80 p-3.5 shadow-xs">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                Pending Packing
+              </span>
+              <p className="text-2xl font-black text-sky-700 mt-0.5">{pendingOrdersCount}</p>
+              <span className="text-[10px] text-slate-500 font-medium mt-0.5 block">
+                In Kitchen Prep
+              </span>
+            </div>
+
+            {/* In-Transit to Stations */}
+            <div className="rounded-2xl bg-white border border-slate-200/80 p-3.5 shadow-xs">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                In Minibus Transit
+              </span>
+              <p className="text-2xl font-black text-emerald-800 mt-0.5">
+                {t22PendingArrivalCount + t34PendingArrivalCount}
+              </p>
+              <span className="text-[10px] text-slate-500 font-medium mt-0.5 block">
+                T22: {t22PendingArrivalCount} • T34: {t34PendingArrivalCount}
+              </span>
+            </div>
+
+            {/* Pending Subscriptions */}
+            <div className="rounded-2xl bg-white border border-slate-200/80 p-3.5 shadow-xs">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                Pending Proofs
+              </span>
+              <p className="text-2xl font-black text-amber-700 mt-0.5">
+                {pendingSubscriptions.length}
+              </p>
+              <span className="text-[10px] text-amber-800 font-medium mt-0.5 block">
+                Awaiting Verification
+              </span>
+            </div>
+          </div>
+
+          {/* Consolidated Meal Window Status Bar */}
+          <MealStatusCard mealContext={mealContext} />
+
+          {/* ======================================================== */}
+          {/* TAB 1: KITCHEN VIEW (Order Quantities & Prep Limits)     */}
+          {/* ======================================================== */}
+          {activeTab === 'kitchen' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg sm:text-xl font-extrabold text-[#101426] tracking-tight">
+                    {focusedMeal ? formatTotalsTitle(language, t, focusedMeal) : t.kitchenView}
+                  </h2>
+                  <p className="text-xs text-slate-500 font-normal">
+                    {t.kitchenTotalsDesc || 'Portion counts for cooks to prepare before minibus departure.'}
+                  </p>
+                </div>
+              </div>
+
+              {loading ? (
+                <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+                  <LoaderCircle className="w-6 h-6 animate-spin text-[#08795d] mx-auto mb-2" />
+                  <span>Loading kitchen totals...</span>
+                </div>
+              ) : Object.keys(kitchenTotals).length > 0 ? (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {Object.entries(kitchenTotals).map(([itemName, count]) => {
+                    const matchingMenuItem = menuItems.find(
+                      (m) => m.name === itemName && m.meal_type === focusedMeal
+                    );
+                    const maxServings = matchingMenuItem?.max_servings;
+                    const isSoldOut = Boolean(
+                      matchingMenuItem?.is_sold_out || (maxServings && count >= maxServings)
+                    );
+                    const percentage = maxServings
+                      ? Math.min(100, Math.round((count / maxServings) * 100))
+                      : null;
+
+                    return (
+                      <div
+                        key={itemName}
+                        className={`rounded-2xl border p-4 bg-white shadow-xs transition flex flex-col justify-between ${
+                          isSoldOut
+                            ? 'border-rose-200 bg-rose-50/20'
+                            : 'border-slate-200/80 hover:border-emerald-300'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                Required Portions
+                              </span>
+                              <div className="flex items-baseline gap-1 mt-0.5">
+                                <span className="text-3xl font-black text-slate-900">{count}x</span>
+                                {maxServings && (
+                                  <span className="text-xs font-semibold text-slate-400">
+                                    / {maxServings} max
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {isSoldOut ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-700">
+                                <Ban className="w-3 h-3" />
+                                {t.soldOut || 'Sold Out'}
+                              </span>
+                            ) : maxServings && count >= maxServings * 0.8 ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800">
+                                Near Limit
+                              </span>
+                            ) : (
+                              <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
+                                Available
+                              </span>
+                            )}
+                          </div>
+
+                          <h3 className="text-base font-bold text-slate-900 mt-2">{itemName}</h3>
+
+                          {maxServings ? (
+                            <div className="mt-3">
+                              <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all ${
+                                    isSoldOut
+                                      ? 'bg-rose-600'
+                                      : count >= maxServings * 0.8
+                                        ? 'bg-amber-500'
+                                        : 'bg-[#08795d]'
+                                  }`}
+                                  style={{ width: `${percentage}%` }}
+                                />
+                              </div>
+                              <p className="mt-1 text-right text-[10px] font-medium text-slate-500">
+                                {percentage}% of limit ({Math.max(0, maxServings - count)} left)
+                              </p>
+                            </div>
+                          ) : null}
+                        </div>
+
+                        {matchingMenuItem && (
+                          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                            <span className="text-[11px] text-slate-400">Toggle Status</span>
+                            <button
+                              type="button"
+                              className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition ${
+                                matchingMenuItem.is_sold_out
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+                                  : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                              }`}
+                              onClick={() => handleToggleSoldOut(matchingMenuItem)}
+                              disabled={togglingMenuId === matchingMenuItem.id}
+                            >
+                              {matchingMenuItem.is_sold_out ? '✓ Mark Available' : '✕ Mark Sold Out'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <EmptyState
+                  title={t.noOrdersYet || 'No orders placed yet'}
+                  description={t.totalsAppearHere || 'Totals will appear here once students start ordering.'}
+                />
+              )}
+            </div>
+          )}
+
+          {/* ======================================================== */}
+          {/* TAB 2: PACKING / DISPATCH (Minibus Departure & Arrival)  */}
+          {/* ======================================================== */}
+          {activeTab === 'packing' && (
+            <div className="space-y-5">
+              {/* Central Dispatch Operational Controller */}
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                  {/* Step 1: Mark All as Packed */}
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-800 text-xs font-extrabold flex items-center justify-center">
+                        1
+                      </span>
+                      <h3 className="text-sm sm:text-base font-bold text-slate-900">
+                        {isAmharic ? 'የማሸጊያ እና ጉዞ ቁጥጥር' : 'Minibus Departure (All Orders)'}
+                      </h3>
+                    </div>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      {isAmharic
+                        ? 'ምግቦች በሙሉ ተዘጋጅተው በሚኒባሱ ሲጫኑ "ሁሉንም ታሽጓል በል" የሚለውን ይጫኑ።'
+                        : 'Once all dishes are packed and loaded into the delivery minibus, mark all as packed.'}
+                    </p>
+                    <div className="pt-1">
+                      <button
+                        type="button"
+                        onClick={handleMarkAllPacked}
+                        disabled={pendingOrdersCount === 0 || packingAllOrders}
+                        className={`inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-xs sm:text-sm font-bold shadow-xs transition-all ${
+                          pendingOrdersCount === 0
+                            ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                            : 'bg-sky-600 text-white hover:bg-sky-700 active:scale-[0.98]'
+                        }`}
+                      >
+                        <Package className="mr-2 h-4 w-4" />
+                        {packingAllOrders
+                          ? isAmharic
+                            ? 'በማሸግ ላይ...'
+                            : 'Packing All Orders...'
+                          : pendingOrdersCount === 0
+                            ? isAmharic
+                              ? 'ሁሉም ታሽጓል ✓'
+                              : 'All Orders Packed ✓'
+                            : `${t.markAllPacked || 'Mark All as Packed'} (${pendingOrdersCount})`}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="hidden lg:block h-16 w-px bg-slate-200" />
+
+                  {/* Step 2: Mark Station Arrival */}
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 text-xs font-extrabold flex items-center justify-center">
+                        2
+                      </span>
+                      <h3 className="text-sm sm:text-base font-bold text-slate-900">
+                        {isAmharic ? 'የመድረሻ ማሳወቂያ በህንፃ' : 'Arrival Notice by Station'}
+                      </h3>
+                    </div>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      {isAmharic
+                        ? 'ሚኒባሱ እያንዳንዱ ህንፃ ሲደርስ "ደርሷል" ይጫኑ፤ ተማሪዎች ወዲያውኑ የድምፅ ማሳወቂያ ይደርሳቸዋል።'
+                        : 'When reaching each building, click to trigger the in-app arrival alert and sound chime.'}
+                    </p>
+                    <div className="flex flex-wrap gap-2.5 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => handlePickupArrival('T22')}
+                        disabled={!t22PendingArrivalCount || dispatchingPickup === 'T22'}
+                        className={`inline-flex items-center justify-center rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold transition-all shadow-xs ${
+                          !t22PendingArrivalCount
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-not-allowed'
+                            : 'bg-[#08795d] text-white hover:bg-[#07684f] active:scale-[0.98]'
+                        }`}
+                      >
+                        <Truck className="mr-2 h-4 w-4" />
+                        {dispatchingPickup === 'T22'
+                          ? 'T22...'
+                          : !t22PendingArrivalCount && groupedOrders['T22']?.length > 0
+                            ? 'T22 Arrived ✓'
+                            : `${t.markT22Arrived || 'Mark T22 as Arrived'} (${t22PendingArrivalCount})`}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handlePickupArrival('T34')}
+                        disabled={!t34PendingArrivalCount || dispatchingPickup === 'T34'}
+                        className={`inline-flex items-center justify-center rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold transition-all shadow-xs ${
+                          !t34PendingArrivalCount
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-not-allowed'
+                            : 'bg-[#08795d] text-white hover:bg-[#07684f] active:scale-[0.98]'
+                        }`}
+                      >
+                        <Truck className="mr-2 h-4 w-4" />
+                        {dispatchingPickup === 'T34'
+                          ? 'T34...'
+                          : !t34PendingArrivalCount && groupedOrders['T34']?.length > 0
+                            ? 'T34 Arrived ✓'
+                            : `${t.markT34Arrived || 'Mark T34 as Arrived'} (${t34PendingArrivalCount})`}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Orders Grouped by Station (T22 & T34) */}
+              <div className="grid gap-4 lg:grid-cols-2">
+                {['T22', 'T34'].map((pickupKey) => {
+                  const list = groupedOrders[pickupKey] || [];
+                  const arrivedCount = list.filter((o) => o.status === 'Arrived').length;
 
                   return (
-                    <div key={itemName} className="soft-panel p-5 relative overflow-hidden flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Order count</p>
-                            <p className="mt-2 text-3xl font-extrabold text-slate-950">
-                              {count}x
-                              {maxServings ? (
-                                <span className="text-sm font-normal text-slate-400"> / {maxServings} max</span>
-                              ) : null}
-                            </p>
-                          </div>
-
-                          {isSoldOut ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2.5 py-1 text-xs font-bold text-rose-700">
-                              <Ban className="h-3 w-3" />
-                              Sold Out
-                            </span>
-                          ) : maxServings && count >= maxServings * 0.8 ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
-                              Near Limit
-                            </span>
-                          ) : (
-                            <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
-                              Available
-                            </span>
-                          )}
+                    <div
+                      key={pickupKey}
+                      className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs space-y-3"
+                    >
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div>
+                          <h3 className="text-base font-bold text-slate-900">
+                            {PICKUP_LABELS[pickupKey]}
+                          </h3>
+                          <p className="text-xs text-slate-500">
+                            {list.length} orders total • {arrivedCount} arrived
+                          </p>
                         </div>
-
-                        <p className="mt-2 text-base font-semibold text-slate-800">{itemName}</p>
-
-                        {maxServings ? (
-                          <div className="mt-3">
-                            <div className="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
-                              <div
-                                className={`h-full rounded-full transition-all ${
-                                  isSoldOut ? 'bg-rose-600' : count >= maxServings * 0.8 ? 'bg-amber-500' : 'bg-emerald-600'
-                                }`}
-                                style={{ width: `${percentage}%` }}
-                              />
-                            </div>
-                            <p className="mt-1 text-right text-[11px] font-medium text-slate-500">
-                              {percentage}% of batch limit ({Math.max(0, maxServings - count)} left)
-                            </p>
-                          </div>
-                        ) : null}
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                            arrivedCount === list.length && list.length > 0
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-slate-100 text-slate-700'
+                          }`}
+                        >
+                          {arrivedCount === list.length && list.length > 0
+                            ? 'All Arrived ✓'
+                            : `${list.length - arrivedCount} In Transit`}
+                        </span>
                       </div>
 
-                      {matchingMenuItem ? (
-                        <div className="mt-4 pt-3 border-t border-slate-200/60 flex justify-end">
-                          <button
-                            type="button"
-                            className={`text-xs font-semibold px-3 py-1.5 rounded-xl border transition ${
-                              matchingMenuItem.is_sold_out
-                                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
-                                : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
-                            }`}
-                            onClick={() => handleToggleSoldOut(matchingMenuItem)}
-                            disabled={togglingMenuId === matchingMenuItem.id}
-                          >
-                            {matchingMenuItem.is_sold_out ? '✓ Mark Available' : '✕ Mark Sold Out'}
-                          </button>
-                        </div>
-                      ) : null}
+                      <div className="space-y-2.5 max-h-[500px] overflow-y-auto pr-1">
+                        {list.length ? (
+                          list.map((order) => (
+                            <div
+                              key={order.id}
+                              className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 flex items-center justify-between gap-3"
+                            >
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-bold text-slate-900 truncate">
+                                  {order.user?.name || 'Student'}
+                                </p>
+                                <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
+                                  <span>ID: <strong className="font-mono text-slate-700">{order.user?.identity_number}</strong></span>
+                                  <span>•</span>
+                                  <span>{order.user?.phone}</span>
+                                </div>
+                                <p className="text-xs font-semibold text-[#08795d] mt-1 truncate">
+                                  🍲 {order.menu?.name}
+                                </p>
+                              </div>
+
+                              <div className="shrink-0">
+                                {order.status === 'Arrived' ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                                    {t.arrived || 'Arrived'}
+                                  </span>
+                                ) : order.status === 'Packed' ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-bold text-sky-800">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-sky-600 animate-pulse" />
+                                    {t.packed || 'Packed'}
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-amber-600" />
+                                    {t.pending || 'In Kitchen'}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="py-8 text-center text-xs text-slate-400">
+                            No orders for {pickupKey} yet.
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
               </div>
-            ) : (
-              <EmptyState
-                title={t.noOrdersYet}
-                description={t.totalsAppearHere}
-              />
-            )}
-          </section>
-        ) : null}
-
-        {activeTab === 'packing' ? (
-          <div className="space-y-6">
-            {/* Global Dispatch & Packing Action Bar */}
-            <div className="panel w-full p-5 md:p-6 border-slate-200 shadow-sm bg-gradient-to-r from-slate-50 via-white to-emerald-50/40">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                {/* 1. One Mark All as Packed button */}
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-100 text-xs font-bold text-sky-800">
-                      1
-                    </span>
-                    <h3 className="text-base font-bold text-slate-900">
-                      {language === 'am' ? 'የማሸጊያ እና ጉዞ ቁጥጥር' : 'Minibus Departure (All Orders)'}
-                    </h3>
-                  </div>
-                  <p className="text-xs text-slate-600">
-                    {language === 'am'
-                      ? 'ምግቦች በሙሉ ተዘጋጅተው ሚኒባሱ ላይ ሲጫኑ "ሁሉንም ታሽጓል በል" የሚለውን ይጫኑ::'
-                      : 'When all meals are cooked and boxed into the delivery vehicle, dispatch them at once.'}
-                  </p>
-                  <div className="pt-1">
-                    <button
-                      type="button"
-                      onClick={handleMarkAllPacked}
-                      disabled={pendingOrdersCount === 0 || packingAllOrders}
-                      className={`inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-bold shadow-md transition ${
-                        pendingOrdersCount === 0
-                          ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
-                          : 'bg-sky-600 text-white hover:bg-sky-700 active:scale-98 shadow-sky-600/20'
-                      }`}
-                    >
-                      <Package className="mr-2 h-4 w-4" />
-                      {packingAllOrders
-                        ? language === 'am' ? 'በማሸግ ላይ...' : 'Packing All Orders...'
-                        : pendingOrdersCount === 0
-                        ? language === 'am' ? 'ሁሉም ታሽጓል ✓' : 'All Orders Packed ✓'
-                        : `${t.markAllPacked || 'Mark All as Packed'} (${pendingOrdersCount})`}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="hidden lg:block h-20 w-px bg-slate-200" />
-
-                {/* 2. Two Mark as Arrived buttons for each pickup point */}
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-800">
-                      2
-                    </span>
-                    <h3 className="text-base font-bold text-slate-900">
-                      {language === 'am' ? 'የመድረሻ ማሳወቂያ በህንፃ' : 'Arrival Notice by Station'}
-                    </h3>
-                  </div>
-                  <p className="text-xs text-slate-600">
-                    {language === 'am'
-                      ? 'ሚኒባሱ እያንዳንዱ ህንፃ ሲደርስ "ደርሷል" የሚለውን ይጫኑ፤ ተማሪዎች ወዲያውኑ ማሳወቂያ ይደርሳቸዋል::'
-                      : 'When reaching each building, click to trigger the in-app arrival alert for those students.'}
-                  </p>
-                  <div className="flex flex-wrap gap-2.5 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => handlePickupArrival('T22')}
-                      disabled={!t22PendingArrivalCount || dispatchingPickup === 'T22'}
-                      className={`inline-flex items-center justify-center rounded-2xl px-4 py-3 text-sm font-bold transition shadow-sm ${
-                        !t22PendingArrivalCount
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-not-allowed'
-                          : 'bg-emerald-700 text-white hover:bg-emerald-800 active:scale-98 shadow-emerald-700/20'
-                      }`}
-                    >
-                      <Truck className="mr-2 h-4 w-4" />
-                      {dispatchingPickup === 'T22'
-                        ? 'T22...'
-                        : !t22PendingArrivalCount && (groupedOrders['T22']?.length > 0)
-                        ? 'T22 Arrived ✓'
-                        : `${t.markT22Arrived || 'Mark T22 as Arrived'} (${t22PendingArrivalCount})`}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handlePickupArrival('T34')}
-                      disabled={!t34PendingArrivalCount || dispatchingPickup === 'T34'}
-                      className={`inline-flex items-center justify-center rounded-2xl px-4 py-3 text-sm font-bold transition shadow-sm ${
-                        !t34PendingArrivalCount
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-not-allowed'
-                          : 'bg-emerald-700 text-white hover:bg-emerald-800 active:scale-98 shadow-emerald-700/20'
-                      }`}
-                    >
-                      <Truck className="mr-2 h-4 w-4" />
-                      {dispatchingPickup === 'T34'
-                        ? 'T34...'
-                        : !t34PendingArrivalCount && (groupedOrders['T34']?.length > 0)
-                        ? 'T34 Arrived ✓'
-                        : `${t.markT34Arrived || 'Mark T34 as Arrived'} (${t34PendingArrivalCount})`}
-                    </button>
-                  </div>
-                </div>
-              </div>
             </div>
+          )}
 
-            {/* Orders Grouped by Pickup Point */}
-            <div className="grid gap-3 md:gap-6 xl:grid-cols-2">
-              {(['T22', 'T34']).map((pickupKey) => {
-                const list = groupedOrders[pickupKey] || [];
-                const arrivedCount = list.filter((o) => o.status === 'Arrived').length;
-                return (
-                  <div key={pickupKey} className="panel w-full px-5 py-6 md:p-6">
-                    <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
-                      <div>
-                        <h2 className="text-xl font-bold text-slate-900">{PICKUP_LABELS[pickupKey]}</h2>
-                        <p className="mt-0.5 text-xs text-slate-500">
-                          {list.length} orders total • {arrivedCount} arrived
-                        </p>
-                      </div>
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-bold ${
-                          arrivedCount === list.length && list.length > 0
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-slate-100 text-slate-700'
+          {/* ======================================================== */}
+          {/* TAB 3: MENU MANAGEMENT (Add Dish, Portions & Filters)    */}
+          {/* ======================================================== */}
+          {activeTab === 'menu' && (
+            <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
+              {/* Left Column: Add Dish Form */}
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs space-y-4">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Add Menu Item</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Create meal options with optional batch portion limits.
+                  </p>
+                </div>
+
+                <form onSubmit={handleMenuSubmit} className="space-y-3.5">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                      Meal Name
+                    </label>
+                    <input
+                      className="w-full h-11 px-3 rounded-xl border border-slate-300 text-xs font-medium text-slate-900 bg-[#f5f5f7] focus:outline-none focus:border-[#08795d]"
+                      placeholder="e.g. Shiro with Injera"
+                      value={menuName}
+                      onChange={(e) => setMenuName(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                      Meal Type Window
+                    </label>
+                    <select
+                      className="w-full h-11 px-3 rounded-xl border border-slate-300 text-xs font-medium text-slate-900 bg-[#f5f5f7] focus:outline-none focus:border-[#08795d]"
+                      value={menuMealType}
+                      onChange={(e) => setMenuMealType(e.target.value)}
+                    >
+                      <option value="Breakfast">Breakfast (1:00 - 2:00 Local Time)</option>
+                      <option value="Lunch">Lunch (5:00 - 7:00 Local Time)</option>
+                      <option value="Dinner">Dinner (11:00 - 1:00 Local Time)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Portion Limit (Max Servings)
+                      </label>
+                      <span className="text-[10px] text-slate-400">Optional</span>
+                    </div>
+                    <input
+                      className="w-full h-11 px-3 rounded-xl border border-slate-300 text-xs font-medium text-slate-900 bg-[#f5f5f7] focus:outline-none focus:border-[#08795d]"
+                      type="number"
+                      min="1"
+                      placeholder="e.g. 50 (leave blank for unlimited)"
+                      value={menuMaxServings}
+                      onChange={(e) => setMenuMaxServings(e.target.value)}
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      Dish automatically marks Sold Out when student orders reach this number.
+                    </p>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={savingMenu}
+                    className="w-full h-11 rounded-xl bg-[#08795d] text-white font-bold text-xs sm:text-sm hover:bg-[#07684f] shadow-sm transition flex items-center justify-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>{savingMenu ? 'Saving...' : 'Add to Menu'}</span>
+                  </button>
+                </form>
+              </div>
+
+              {/* Right Column: Current Menu by Meal Window */}
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">Current Dishes</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Toggle sold-out states and manage portions.
+                    </p>
+                  </div>
+
+                  {/* Filter Pills */}
+                  <div className="inline-flex p-1 rounded-xl bg-slate-100 border border-slate-200 gap-1 self-start sm:self-auto">
+                    {['All', 'Breakfast', 'Lunch', 'Dinner'].map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setMenuFilter(type)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                          menuFilter === type
+                            ? 'bg-white text-[#08795d] shadow-xs'
+                            : 'text-slate-500 hover:text-slate-800'
                         }`}
                       >
-                        {arrivedCount === list.length && list.length > 0
-                          ? 'All Arrived ✓'
-                          : `${list.length - arrivedCount} In Transit`}
-                      </span>
-                    </div>
-
-                    <div className="space-y-3">
-                      {list.length ? (
-                        list.map((order) => (
-                          <div
-                            key={order.id}
-                            className="soft-panel p-4 flex flex-wrap items-center justify-between gap-3"
-                          >
-                            <div className="space-y-0.5">
-                              <p className="text-sm font-bold text-slate-900">{order.user?.name}</p>
-                              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
-                                <span>
-                                  ID: <strong className="font-mono text-slate-800">{order.user?.identity_number}</strong>
-                                </span>
-                                <span>•</span>
-                                <span>Phone: {order.user?.phone}</span>
-                              </div>
-                              <p className="pt-1 text-xs font-semibold text-emerald-800">
-                                🍲 {order.menu?.name}
-                              </p>
-                            </div>
-                            <div>
-                              {order.status === 'Arrived' ? (
-                                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
-                                  {t.arrived || 'Arrived'}
-                                </span>
-                              ) : order.status === 'Packed' ? (
-                                <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-100 px-3 py-1 text-xs font-bold text-sky-800">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-sky-600 animate-pulse" />
-                                  {t.packed || 'Packed'}
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-amber-600" />
-                                  {t.pending || 'In Kitchen'}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <EmptyState
-                          title={`No ${pickupKey} orders`}
-                          description="Orders for this pickup point will appear here once students place them."
-                        />
-                      )}
-                    </div>
+                        {type}
+                      </button>
+                    ))}
                   </div>
-                );
-              })}
-            </div>
-          </div>
-        ) : null}
-
-        {activeTab === 'menu' ? (
-          <section className="grid gap-3 md:gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-            <div className="panel w-full px-5 py-6 md:p-6">
-              <h2 className="text-2xl font-bold">Add menu item</h2>
-              <p className="mt-1 text-sm text-slate-600">
-                Create breakfast, lunch, or dinner options for students.
-              </p>
-
-              <form className="mt-6 space-y-4" onSubmit={handleMenuSubmit}>
-                <label className="block space-y-2">
-                  <span className="text-sm font-medium text-slate-700">Meal Name</span>
-                  <input
-                    className="input"
-                    placeholder="Example: Shiro with injera"
-                    value={menuName}
-                    onChange={(event) => setMenuName(event.target.value)}
-                  />
-                </label>
-
-                <label className="block space-y-2">
-                  <span className="text-sm font-medium text-slate-700">Meal Type</span>
-                  <select
-                    className="input"
-                    value={menuMealType}
-                    onChange={(event) => setMenuMealType(event.target.value)}
-                  >
-                    <option value="Breakfast">Breakfast</option>
-                    <option value="Lunch">Lunch</option>
-                    <option value="Dinner">Dinner</option>
-                  </select>
-                </label>
-
-                <label className="block space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-slate-700">Portion Limit (Max Servings)</span>
-                    <span className="text-xs text-slate-400">Optional</span>
-                  </div>
-                  <input
-                    className="input"
-                    type="number"
-                    min="1"
-                    placeholder="e.g. 50 (leave blank for unlimited)"
-                    value={menuMaxServings}
-                    onChange={(event) => setMenuMaxServings(event.target.value)}
-                  />
-                  <p className="text-[11px] text-slate-500">
-                    Once orders reach this number, the dish automatically switches to Sold Out.
-                  </p>
-                </label>
-
-                <button type="submit" className="btn-primary w-full" disabled={savingMenu}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  {savingMenu ? 'Saving...' : 'Add menu item'}
-                </button>
-              </form>
-            </div>
-
-            <div className="panel w-full px-5 py-6 md:p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold">Current menu</h2>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Filter by meal type, manage portion limits, and toggle sold-out status. Sold-out dishes automatically reset to available when their meal cycle closes.
-                  </p>
                 </div>
 
-                {/* Meal Filter Tabs */}
-                <div className="inline-flex flex-wrap p-1 rounded-2xl bg-slate-100 border border-slate-200/80 gap-1 self-start sm:self-auto">
-                  {[
-                    { id: 'All', label: 'All', count: menuItems.length },
-                    { id: 'Breakfast', label: '🍳 Breakfast', count: menuItems.filter((i) => i.meal_type === 'Breakfast').length },
-                    { id: 'Lunch', label: '🍲 Lunch', count: menuItems.filter((i) => i.meal_type === 'Lunch').length },
-                    { id: 'Dinner', label: '🍽️ Dinner', count: menuItems.filter((i) => i.meal_type === 'Dinner').length },
-                  ].map((filterTab) => (
-                    <button
-                      key={filterTab.id}
-                      type="button"
-                      onClick={() => setMenuFilter(filterTab.id)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
-                        menuFilter === filterTab.id
-                          ? 'bg-white text-emerald-800 shadow-sm'
-                          : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-                      }`}
-                    >
-                      {filterTab.label} <span className="opacity-70 text-[11px]">({filterTab.count})</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+                <div className="space-y-3 max-h-[550px] overflow-y-auto pr-1">
+                  {menuItems.length ? (
+                    ['Breakfast', 'Lunch', 'Dinner']
+                      .filter((type) => menuFilter === 'All' || menuFilter === type)
+                      .map((mealType) => {
+                        const items = menuItems.filter((i) => i.meal_type === mealType);
+                        if (!items.length) return null;
 
-              <div className="space-y-6">
-                {menuItems.length ? (
-                  ['Breakfast', 'Lunch', 'Dinner']
-                    .filter((mealType) => menuFilter === 'All' || menuFilter === mealType)
-                    .map((mealType) => {
-                      const itemsInMeal = menuItems.filter((item) => item.meal_type === mealType);
+                        return (
+                          <div key={mealType} className="space-y-2">
+                            <div className="flex items-center gap-2 border-b border-slate-100 pb-1 pt-1">
+                              <span className="text-xs font-bold text-slate-700">{mealType}</span>
+                              <span className="text-[10px] text-slate-400">({items.length} dishes)</span>
+                            </div>
 
-                      if (!itemsInMeal.length) {
-                        return menuFilter === mealType ? (
-                          <div key={mealType} className="py-8 text-center text-sm text-slate-500 bg-slate-50 rounded-2xl border border-slate-200/60">
-                            No {mealType.toLowerCase()} items added yet.
-                          </div>
-                        ) : null;
-                      }
+                            <div className="space-y-2">
+                              {items.map((item) => (
+                                <div
+                                  key={item.id}
+                                  className={`rounded-xl border p-3 flex items-center justify-between gap-3 transition ${
+                                    item.is_sold_out
+                                      ? 'border-slate-200 bg-slate-50/70 opacity-75'
+                                      : 'border-slate-100 bg-white hover:border-slate-200'
+                                  }`}
+                                >
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <p
+                                        className={`text-sm font-bold truncate ${
+                                          item.is_sold_out ? 'text-slate-400 line-through' : 'text-slate-900'
+                                        }`}
+                                      >
+                                        {item.name}
+                                      </p>
+                                      {item.is_sold_out && (
+                                        <span className="text-[10px] font-bold bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full shrink-0">
+                                          Sold Out
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-[11px] text-slate-500 mt-0.5">
+                                      {item.max_servings ? `${item.max_servings} max servings` : 'Unlimited'}
+                                    </p>
+                                  </div>
 
-                      return (
-                        <div key={mealType} className="space-y-3">
-                          <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                            <span
-                              className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                                mealType === 'Breakfast'
-                                  ? 'bg-amber-100 text-amber-800'
-                                  : mealType === 'Lunch'
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : 'bg-indigo-100 text-indigo-800'
-                              }`}
-                            >
-                              {mealType === 'Breakfast' ? '🍳 Breakfast' : mealType === 'Lunch' ? '🍲 Lunch' : '🍽️ Dinner'}
-                            </span>
-                            <span className="text-xs text-slate-400 font-medium">
-                              ({itemsInMeal.length} {itemsInMeal.length === 1 ? 'dish' : 'dishes'})
-                            </span>
-                          </div>
-
-                          <div className="space-y-3">
-                            {itemsInMeal.map((item) => (
-                              <div
-                                key={item.id}
-                                className={`soft-panel flex flex-wrap items-center justify-between gap-4 p-4 transition ${
-                                  item.is_sold_out ? 'bg-slate-100/70 opacity-80' : 'bg-white'
-                                }`}
-                              >
-                                <div className="space-y-1">
-                                  <div className="flex items-center gap-2">
-                                    <p
-                                      className={`text-base font-semibold ${
-                                        item.is_sold_out ? 'text-slate-500 line-through' : 'text-slate-900'
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleSoldOut(item)}
+                                      disabled={togglingMenuId === item.id}
+                                      className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
+                                        item.is_sold_out
+                                          ? 'border-emerald-300 text-emerald-800 bg-emerald-50 hover:bg-emerald-100'
+                                          : 'border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100'
                                       }`}
                                     >
-                                      {item.name}
-                                    </p>
-                                    {item.is_sold_out ? (
-                                      <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-700">
-                                        Sold Out
-                                      </span>
-                                    ) : (
-                                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800">
-                                        Available
-                                      </span>
-                                    )}
+                                      {item.is_sold_out ? 'Mark Available' : 'Mark Sold Out'}
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteMenu(item.id)}
+                                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                                      title="Delete dish"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
                                   </div>
-                                  <p className="text-xs text-slate-500">
-                                    {item.meal_type} • {item.max_servings ? `Portion limit: ${item.max_servings} max` : 'Unlimited portions'}
-                                  </p>
                                 </div>
-
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <button
-                                    type="button"
-                                    className={`btn-secondary py-2 px-3 text-xs inline-flex items-center gap-1.5 transition ${
-                                      item.is_sold_out
-                                        ? 'border-emerald-300 text-emerald-800 hover:bg-emerald-50'
-                                        : 'border-rose-200 text-rose-700 hover:bg-rose-50'
-                                    }`}
-                                    onClick={() => handleToggleSoldOut(item)}
-                                    disabled={togglingMenuId === item.id}
-                                  >
-                                    {item.is_sold_out ? (
-                                      <>
-                                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-700" />
-                                        Mark Available
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Ban className="h-3.5 w-3.5 text-rose-600" />
-                                        Mark Sold Out
-                                      </>
-                                    )}
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    className="btn-secondary py-2 px-3 text-xs text-slate-400 hover:text-rose-600 hover:border-rose-200"
-                                    onClick={() => handleDeleteMenu(item.id)}
-                                    title="Delete menu item"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })
-                ) : (
-                  <EmptyState
-                    title="No menu items"
-                    description="Start by adding breakfast, lunch, or dinner entries."
-                  />
-                )}
+                        );
+                      })
+                  ) : (
+                    <div className="py-8 text-center text-xs text-slate-400">
+                      No menu items added yet.
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </section>
-        ) : null}
+          )}
 
-        {activeTab === 'subscriptions' ? (
-          <section className="space-y-2 md:space-y-6">
-            <div className="grid gap-3 md:gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-              <div className="panel w-full px-5 py-6 md:p-6">
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold">{t.pendingApprovals}</h2>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Review submitted payment references before unlocking meal access.
-                  </p>
+          {/* ======================================================== */}
+          {/* TAB 4: SUBSCRIPTIONS (Payment Approvals & Active Roster)  */}
+          {/* ======================================================== */}
+          {activeTab === 'subscriptions' && (
+            <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+              {/* Left Column: Pending Approvals Queue */}
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">
+                      {t.pendingApprovals || 'Pending Approvals'}
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Review submitted transaction proofs to unlock meal ordering.
+                    </p>
+                  </div>
+                  <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-0.5 rounded-full">
+                    {pendingSubscriptions.length} Pending
+                  </span>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {loading ? (
-                    <p className="text-sm text-slate-600">Loading payment approvals...</p>
+                    <div className="py-8 text-center text-xs text-slate-400">Loading approvals...</div>
                   ) : pendingSubscriptions.length ? (
                     pendingSubscriptions.map((student) => (
-                      <div key={student.id} className="soft-panel flex flex-wrap items-center justify-between gap-4 p-4">
-                        <div className="space-y-1">
-                          <p className="text-base font-semibold text-slate-900">{student.name || 'Unnamed student'}</p>
-                          <p className="text-sm text-slate-600">Phone: {student.phone || 'Not provided'}</p>
-                          <p className="text-sm text-slate-600">
-                            Ref: <strong>{student.last_transaction_ref || 'Missing reference'}</strong>
-                          </p>
-                          <div className="pt-1">
-                            {student.receipt_url ? (
-                              <button
-                                type="button"
-                                className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100"
-                                onClick={() => setViewingReceiptStudent(student)}
-                              >
-                                <Eye className="h-3.5 w-3.5 text-emerald-700" />
-                                View Receipt Screenshot
-                              </button>
-                            ) : (
-                              <span className="text-xs italic text-slate-400">No screenshot attached</span>
-                            )}
+                      <div
+                        key={student.id}
+                        className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-3"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                          <div>
+                            <h4 className="text-sm font-bold text-slate-900">
+                              {student.name || 'Student Name'}
+                            </h4>
+                            <p className="text-xs text-slate-500">Phone: {student.phone}</p>
+                            <p className="text-xs text-slate-800 mt-1">
+                              Reference: <strong className="font-mono">{student.last_transaction_ref}</strong>
+                            </p>
                           </div>
+
+                          {student.receipt_url && (
+                            <button
+                              type="button"
+                              onClick={() => setViewingReceiptStudent(student)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-300 bg-white text-xs font-bold text-[#08795d] hover:bg-emerald-50 shadow-xs transition"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>View Receipt</span>
+                            </button>
+                          )}
                         </div>
-                        <div className="flex flex-wrap gap-3">
+
+                        <div className="flex items-center gap-2 pt-2 border-t border-slate-200/60 justify-end">
                           <button
                             type="button"
-                            className="btn-primary"
-                            onClick={() => handleApproveSubscription(student.id)}
+                            onClick={() => openRejectModal(student)}
                             disabled={subscriptionActionId === student.id}
+                            className="px-3.5 py-2 rounded-xl border border-rose-200 text-rose-700 text-xs font-bold hover:bg-rose-50 transition"
                           >
-                            {t.approve}
+                            {t.reject || 'Reject'}
                           </button>
                           <button
                             type="button"
-                            className="btn-secondary"
-                            onClick={() => openRejectModal(student)}
+                            onClick={() => handleApproveSubscription(student.id)}
                             disabled={subscriptionActionId === student.id}
+                            className="px-4 py-2 rounded-xl bg-[#08795d] text-white text-xs font-bold hover:bg-[#07684f] shadow-xs transition"
                           >
-                            {t.reject}
+                            {t.approve || 'Approve (30 Days)'}
                           </button>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <EmptyState
-                      title="No pending payments"
-                      description="Submitted payment references will appear here for approval."
-                    />
+                    <div className="py-8 text-center text-xs text-slate-400">
+                      No pending subscription payments to review.
+                    </div>
                   )}
                 </div>
               </div>
 
-              <div className="panel w-full px-5 py-6 md:p-6">
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold">{t.activeStudents}</h2>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Monitor the remaining days on each approved 30-day subscription.
-                  </p>
+              {/* Right Column: Active Students Roster */}
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">
+                      {t.activeStudents || 'Active Students'}
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Students currently authorized to order meals.
+                    </p>
+                  </div>
+                  <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-0.5 rounded-full">
+                    {activeSubscriptions.length} Active
+                  </span>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-2.5 max-h-[500px] overflow-y-auto pr-1">
                   {loading ? (
-                    <p className="text-sm text-slate-600">Loading active subscriptions...</p>
+                    <div className="py-8 text-center text-xs text-slate-400">Loading active list...</div>
                   ) : activeSubscriptions.length ? (
                     activeSubscriptions.map((student) => {
                       const daysRemaining = getSubscriptionDaysRemaining(student.subscription_end_date);
 
                       return (
-                        <div key={student.id} className="soft-panel flex flex-wrap items-center justify-between gap-4 p-4">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <BadgeCheck className="h-5 w-5 text-emerald-700" />
-                              <p className="text-base font-semibold text-slate-900">{student.name || 'Unnamed student'}</p>
-                            </div>
-                            <p className="text-sm text-slate-600">
-                              {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'} left
+                        <div
+                          key={student.id}
+                          className="rounded-xl border border-slate-100 bg-slate-50/50 p-3 flex items-center justify-between gap-3"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-slate-900 truncate">
+                              {student.name || 'Unnamed student'}
+                            </p>
+                            <p className="text-[11px] text-[#08795d] font-semibold">
+                              {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'} remaining
                             </p>
                           </div>
+
                           <button
                             type="button"
-                            className="btn-secondary"
                             onClick={() => handleRevokeSubscription(student.id)}
                             disabled={subscriptionActionId === student.id}
+                            className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-[11px] font-semibold text-slate-500 hover:text-rose-600 hover:border-rose-200 transition"
                           >
-                            {t.revoke}
+                            {t.revoke || 'Revoke'}
                           </button>
                         </div>
                       );
                     })
                   ) : (
-                    <EmptyState
-                      title="No active subscriptions"
-                      description="Approved subscriptions will appear here once payment is verified."
-                    />
+                    <div className="py-8 text-center text-xs text-slate-400">
+                      No active student subscriptions found.
+                    </div>
                   )}
                 </div>
               </div>
             </div>
-          </section>
-        ) : null}
+          )}
+        </main>
       </div>
 
-      {rejectingStudent ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-6">
-          <div className="panel w-full max-w-lg p-6">
-            <h2 className="text-2xl font-bold">Reject payment submission</h2>
-            <p className="mt-2 text-sm text-slate-600">
-              Reason for rejection? (e.g., Invalid reference, Payment not received)
+      {/* ======================================================== */}
+      {/* MOBILE FIXED BOTTOM NAVIGATION BAR (md:hidden)           */}
+      {/* ======================================================== */}
+      <nav
+        className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-slate-200/80 shadow-lg px-2 py-1.5 flex items-center justify-around md:hidden pb-[max(8px,env(safe-area-inset-bottom))]"
+        aria-label="Manager Mobile Bottom Navigation"
+      >
+        {TABS.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex flex-col items-center justify-center min-w-[64px] min-h-[44px] relative transition-colors ${
+                isActive ? 'text-[#08795d]' : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
+              <span className={`text-[10px] mt-0.5 ${isActive ? 'font-bold' : 'font-medium'}`}>
+                {tab.label.split(' ')[0]}
+              </span>
+
+              {tab.id === 'subscriptions' && pendingSubscriptions.length > 0 && (
+                <span className="absolute top-1 right-3 w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              )}
+              {tab.id === 'packing' && pendingOrdersCount > 0 && (
+                <span className="absolute top-1 right-3 w-2 h-2 rounded-full bg-sky-500" />
+              )}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* ======================================================== */}
+      {/* REJECTION REASON MODAL                                    */}
+      {/* ======================================================== */}
+      {rejectingStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl border border-slate-100 font-campus animate-fadeIn">
+            <h3 className="text-lg font-bold text-slate-900">Reject Payment Submission</h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Select or type the reason for rejecting this payment proof.
             </p>
 
-            <div className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
-              <p className="font-semibold text-slate-900">
-                {rejectingStudent.name || 'Unnamed student'}
-              </p>
-              <p className="mt-1">Phone: {rejectingStudent.phone || 'Not provided'}</p>
-              <p className="mt-1">
-                Reference: <strong>{rejectingStudent.last_transaction_ref || 'Missing reference'}</strong>
-              </p>
+            <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-700">
+              <p className="font-bold text-slate-900">{rejectingStudent.name}</p>
+              <p className="mt-0.5 text-slate-500">Ref: {rejectingStudent.last_transaction_ref}</p>
             </div>
 
-            <label className="mt-5 block space-y-2">
-              <span className="text-sm font-medium text-slate-700">Quick-select reason</span>
-              <div className="flex flex-wrap gap-2">
-                {REJECTION_REASON_OPTIONS.map((option) => (
+            <div className="mt-3 space-y-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                Quick Select
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {REJECTION_REASON_OPTIONS.map((opt) => (
                   <button
-                    key={option}
+                    key={opt}
                     type="button"
-                    className={`rounded-full px-3 py-2 text-sm font-medium transition ${
-                      rejectionReason === option
-                        ? 'bg-emerald-700 text-white'
-                        : 'border border-slate-200 bg-white text-slate-700 hover:border-emerald-200 hover:text-emerald-700'
+                    onClick={() => setRejectionReason(opt)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition ${
+                      rejectionReason === opt
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                     }`}
-                    onClick={() => setRejectionReason(option)}
                   >
-                    {option}
+                    {opt}
                   </button>
                 ))}
               </div>
-            </label>
+            </div>
 
-            <label className="mt-5 block space-y-2">
-              <span className="text-sm font-medium text-slate-700">Rejection reason</span>
+            <div className="mt-3">
               <textarea
-                className="input min-h-28 resize-none"
+                className="w-full h-20 p-2.5 rounded-xl border border-slate-300 text-xs text-slate-900 focus:outline-none focus:border-[#08795d] resize-none"
+                placeholder="Specific rejection explanation..."
                 value={rejectionReason}
-                onChange={(event) => setRejectionReason(event.target.value)}
-                placeholder="Invalid reference, payment not found, duplicate transaction..."
+                onChange={(e) => setRejectionReason(e.target.value)}
               />
-            </label>
+            </div>
 
-            <div className="mt-6 flex gap-3">
+            <div className="mt-4 flex items-center gap-2.5">
               <button
                 type="button"
-                className="btn-secondary flex-1"
+                className="flex-1 h-10 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 transition"
                 onClick={closeRejectModal}
-                disabled={subscriptionActionId === rejectingStudent.id}
               >
                 Cancel
               </button>
               <button
                 type="button"
-                className="btn-primary flex-1"
+                className="flex-1 h-10 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 transition"
                 onClick={handleRejectSubscription}
-                disabled={subscriptionActionId === rejectingStudent.id}
               >
-                Reject payment
+                Reject Payment
               </button>
             </div>
           </div>
         </div>
-      ) : null}
+      )}
 
-      {viewingReceiptStudent ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
-          <div className="panel max-w-lg w-full p-5 max-h-[92vh] flex flex-col shadow-2xl">
+      {/* ======================================================== */}
+      {/* RECEIPT LIGHTBOX MODAL                                    */}
+      {/* ======================================================== */}
+      {viewingReceiptStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-xs p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl flex flex-col max-h-[90vh] font-campus">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
               <div>
-                <h3 className="text-lg font-bold text-slate-900">Payment Verification Slip</h3>
-                <p className="text-xs text-slate-600">
-                  {viewingReceiptStudent.name || 'Student'} • {viewingReceiptStudent.phone}
+                <h4 className="text-base font-bold text-slate-900">Payment Verification Slip</h4>
+                <p className="text-xs text-slate-500">
+                  {viewingReceiptStudent.name} • Ref: {viewingReceiptStudent.last_transaction_ref}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setViewingReceiptStudent(null)}
-                className="rounded-xl p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700"
               >
-                <X className="h-5 w-5" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-auto bg-slate-950/5 rounded-2xl p-2 flex items-center justify-center min-h-[260px] border border-slate-200">
+            <div className="flex-1 overflow-auto bg-slate-50 rounded-xl p-2 flex items-center justify-center border border-slate-200 min-h-[220px]">
               <img
                 src={viewingReceiptStudent.receipt_url}
-                alt="Payment Receipt"
-                className="max-h-[55vh] max-w-full object-contain rounded-xl shadow-sm"
+                alt="Receipt screenshot"
+                className="max-h-[50vh] max-w-full object-contain rounded-lg"
               />
             </div>
 
-            <div className="mt-3 p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700">
-              <p><strong>Submitted Reference:</strong> {viewingReceiptStudent.last_transaction_ref || 'None'}</p>
-            </div>
-
-            <div className="mt-4 flex flex-wrap gap-2 justify-between items-center">
+            <div className="mt-4 flex items-center justify-between gap-2">
               <a
                 href={viewingReceiptStudent.receipt_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-secondary py-2 px-3 text-xs inline-flex items-center gap-1.5"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-[#08795d]"
               >
-                <ExternalLink className="h-3.5 w-3.5" /> Open Full Image
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Open Full Image</span>
               </a>
-              <div className="flex gap-2">
+
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  className="btn-secondary py-2 px-3 text-xs"
                   onClick={() => setViewingReceiptStudent(null)}
+                  className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100"
                 >
                   Close
                 </button>
                 <button
                   type="button"
-                  className="btn-primary py-2 px-3 text-xs"
                   onClick={() => {
                     const studentId = viewingReceiptStudent.id;
                     setViewingReceiptStudent(null);
                     handleApproveSubscription(studentId);
                   }}
-                  disabled={subscriptionActionId === viewingReceiptStudent.id}
+                  className="px-4 py-2 rounded-xl bg-[#08795d] text-white text-xs font-bold hover:bg-[#07684f]"
                 >
-                  Approve Subscription
+                  Approve (30 Days)
                 </button>
               </div>
             </div>
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
