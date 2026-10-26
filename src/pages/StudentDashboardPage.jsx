@@ -565,6 +565,386 @@ export default function StudentDashboardPage() {
     return menuItems.filter((item) => favorites.includes(item.id));
   }, [menuItems, favorites]);
 
+  // =========================================================================
+  // DEDICATED ACTIVATION VIEW FOR FIRST-TIME & UNSUBSCRIBED STUDENTS
+  // When subscription is not active:
+  // - DO NOT show bottom navigation bar or desktop sidebar navigation tabs
+  // - DO NOT show MealStatusCard ("Ordering is open")
+  // - DO NOT show the menu or food items
+  // - DO NOT show confusing text like "Meal refill required" or "credits run out"
+  // - Show clean, welcoming onboarding copy and the complete 4-step payment flow
+  // =========================================================================
+  if (!isSubscriptionActive) {
+    return (
+      <div className="min-h-screen bg-[#f8f9fa] md:bg-[#f2f2f4] font-campus text-slate-900 flex flex-col">
+        {/* COMPACT TOP HEADER */}
+        <header className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-slate-200/80 px-4 py-3 sm:px-6">
+          <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
+            {/* CampusFood Wordmark */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-xl sm:text-2xl font-extrabold text-[#08795d] tracking-tight">Campus</span>
+              <span className="text-xl sm:text-2xl font-extrabold text-[#d48431] tracking-tight">Food</span>
+            </div>
+
+            {/* Right: Station, Language Toggle, and Sign Out */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#08795d] bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60">
+                <MapPin className="w-3 h-3 text-[#08795d]" />
+                <span>Station: {profile?.pickup_point || 'T22'}</span>
+              </span>
+
+              <LanguageToggle />
+
+              <button
+                type="button"
+                onClick={signOut}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                title={t.signOut || 'Sign out'}
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{t.signOut || 'Sign out'}</span>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* MAIN ACTIVATION CONTENT (No bottom nav, no menu, no ordering open banner) */}
+        <main className="flex-1 max-w-xl w-full mx-auto px-4 py-6 sm:py-8 space-y-4">
+          {/* Greeting Row */}
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-1.5">
+                <span>{t.hello}</span>
+                <span className="text-[#08795d]">{profile?.name || 'Student'}</span>
+                <span>👋</span>
+              </h1>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {profile?.identity_number ? `ID: ${profile.identity_number} • ` : ''}
+                Building {profile?.pickup_point || 'T22'}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleRefresh}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 shadow-xs transition"
+              title="Refresh profile status"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-[#08795d]" />
+              <span className="hidden sm:inline">{t.refresh || 'Refresh'}</span>
+            </button>
+          </div>
+
+          {/* Error Banner if any */}
+          {error && (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs sm:text-sm text-rose-700 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+              <div className="flex-1">{error}</div>
+              <button
+                type="button"
+                onClick={() => setError('')}
+                className="text-rose-400 hover:text-rose-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {/* =============================================================== */}
+          {/* STATE A: PAYMENT PROOF SUBMITTED (UNDER MANAGER VERIFICATION)   */}
+          {/* =============================================================== */}
+          {effectiveSubscriptionStatus === 'pending' ? (
+            <div className="rounded-3xl border border-amber-200/90 bg-white p-6 sm:p-8 shadow-sm text-center space-y-5 animate-fadeIn">
+              <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-200">
+                <Clock3 className="w-8 h-8 animate-pulse text-amber-600" />
+              </div>
+
+              <div>
+                <span className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 mb-2">
+                  {isAmharic ? 'ማረጋገጫ በመጠባበቅ ላይ' : 'Verification Under Review'}
+                </span>
+                <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+                  {t.pendingApprovalTitle || 'Payment Proof Submitted'}
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto mt-2 leading-relaxed">
+                  {t.pendingApprovalDesc ||
+                    'We received your transaction reference. The cafeteria manager will verify your payment and activate your 30-day meal plan shortly. Your ordering dashboard will unlock automatically once approved.'}
+                </p>
+              </div>
+
+              {/* Submitted Details Box */}
+              <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 text-left space-y-2 text-xs">
+                <div className="flex items-center justify-between py-1 border-b border-slate-200/60">
+                  <span className="text-slate-500 font-medium">Student Name</span>
+                  <span className="font-bold text-slate-900">{profile?.name || 'Student'}</span>
+                </div>
+                <div className="flex items-center justify-between py-1 border-b border-slate-200/60">
+                  <span className="text-slate-500 font-medium">Assigned Pickup Station</span>
+                  <span className="font-bold text-[#08795d]">Building {profile?.pickup_point || 'T22'}</span>
+                </div>
+                {profile?.identity_number && (
+                  <div className="flex items-center justify-between py-1 border-b border-slate-200/60">
+                    <span className="text-slate-500 font-medium">Student ID</span>
+                    <span className="font-bold text-slate-900">{profile.identity_number}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between py-1">
+                  <span className="text-slate-500 font-medium">Transaction Reference</span>
+                  <span className="font-bold text-slate-900 truncate max-w-[180px]">
+                    {profile?.last_transaction_ref || 'Under review'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Live Status Check Button */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  className="w-full h-12 rounded-xl bg-[#08795d] text-white font-bold text-xs sm:text-sm hover:bg-[#07684f] shadow-sm transition flex items-center justify-center gap-2"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span>{t.checkStatus || 'Check Status / Refresh'}</span>
+                </button>
+                <p className="text-[11px] text-slate-400 mt-2">
+                  {isAmharic
+                    ? 'ማኔጀሩ ክፍያዎን እንዳረጋገጠ የትዕዛዝ ዳሽቦርዱ በራስ-ሰር ይከፈታል።'
+                    : 'Once verified by cafeteria staff, your dashboard and daily menus will unlock immediately.'}
+                </p>
+              </div>
+            </div>
+          ) : (
+            /* =============================================================== */
+            /* STATE B: NEW STUDENT ACTIVATION & 4-STEP PAYMENT FLOW            */
+            /* =============================================================== */
+            <div className="space-y-4 animate-fadeIn">
+              {/* Welcoming Header Banner */}
+              <div className="rounded-3xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/90 via-white to-amber-50/50 p-5 sm:p-6 shadow-xs">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-[#08795d] flex items-center justify-center shrink-0 mt-0.5">
+                    <Sparkles className="w-5 h-5 text-[#08795d]" />
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#08795d] block">
+                      {t.welcomeNewStudent || 'Welcome to CampusFood!'}
+                    </span>
+                    <h2 className="text-base sm:text-lg font-extrabold text-slate-900 mt-0.5">
+                      {t.activatePlanTitle || 'Activate Your Monthly Meal Plan'}
+                    </h2>
+                    <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                      {t.activatePlanDesc ||
+                        'To start ordering freshly prepared meals delivered directly to your dorm pickup station, choose a monthly meal plan and submit your payment details.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Rejection Alert if manager rejected previous proof */}
+              {profile?.payment_rejection_reason && (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-800 flex items-start gap-2.5">
+                  <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block font-bold">Payment Issue:</strong>
+                    <span>{profile.payment_rejection_reason}</span>
+                    <p className="mt-1 text-[11px] text-rose-600">
+                      Please verify your transfer details below and submit a new transaction reference or screenshot.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* 4-Step Payment Activation Card */}
+              <div className="rounded-3xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+                {/* Step 1: Choose Meal Plan */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-600 block">
+                      Step 1: Choose Meal Plan
+                    </span>
+                    <span className="text-[11px] text-[#08795d] font-semibold">30 Days Service</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPlan('2meals')}
+                      className={`p-3.5 rounded-2xl border text-left transition-all ${
+                        selectedPlan === '2meals'
+                          ? 'border-[#08795d] bg-emerald-50/80 ring-2 ring-emerald-500/20'
+                          : 'border-slate-200 bg-white hover:border-slate-300'
+                      }`}
+                    >
+                      <span className="text-xs font-bold text-slate-900 block">2 Meals / Day</span>
+                      <span className="text-base font-black text-[#08795d] block mt-0.5">4,500 Birr</span>
+                      <span className="text-[10px] text-slate-500 block mt-0.5">Lunch & Dinner</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPlan('3meals')}
+                      className={`p-3.5 rounded-2xl border text-left transition-all ${
+                        selectedPlan === '3meals'
+                          ? 'border-[#08795d] bg-emerald-50/80 ring-2 ring-emerald-500/20'
+                          : 'border-slate-200 bg-white hover:border-slate-300'
+                      }`}
+                    >
+                      <span className="text-xs font-bold text-slate-900 block">3 Meals / Day</span>
+                      <span className="text-base font-black text-[#08795d] block mt-0.5">6,700 Birr</span>
+                      <span className="text-[10px] text-slate-500 block mt-0.5">Breakfast, Lunch & Dinner</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Step 2: Transfer to Cafeteria Account */}
+                <div className="space-y-2 pt-3 border-t border-slate-100">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-600 block">
+                    Step 2: Transfer to Cafeteria Account
+                  </span>
+                  <div className="grid sm:grid-cols-2 gap-2">
+                    {/* CBE */}
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase block">CBE Account</span>
+                        <span className="text-xs font-bold text-slate-900 block select-all">1000690418917</span>
+                        <span className="text-[10px] text-slate-500 truncate block">Biniyam Yimen Tilahun</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyAccount('1000690418917', 'cbe')}
+                        className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition shadow-2xs"
+                      >
+                        {copiedBank === 'cbe' ? 'Copied!' : 'Copy'}
+                      </button>
+                    </div>
+
+                    {/* Telebirr */}
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase block">Telebirr Phone</span>
+                        <span className="text-xs font-bold text-slate-900 block select-all">0950271983</span>
+                        <span className="text-[10px] text-slate-500 truncate block">Biniam</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyAccount('0950271983', 'telebirr')}
+                        className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition shadow-2xs"
+                      >
+                        {copiedBank === 'telebirr' ? 'Copied!' : 'Copy'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 3 & 4: Reference Number & Receipt Upload */}
+                <form onSubmit={handlePaymentSubmit} className="space-y-3.5 pt-3 border-t border-slate-100">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                      Step 3: {t.enterRef}
+                    </label>
+                    <input
+                      className="w-full h-11 px-3.5 rounded-xl border border-slate-300 text-xs font-medium text-slate-900 bg-[#f5f5f7] focus:outline-none focus:border-[#08795d] focus:bg-white transition"
+                      value={paymentReference}
+                      onChange={(e) => setPaymentReference(e.target.value)}
+                      placeholder="Example: CBE123456789 or Telebirr Txn ID"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                      Step 4: Attach Receipt Screenshot
+                    </label>
+                    {!receiptPreview ? (
+                      <label className="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/70 hover:bg-slate-100 cursor-pointer transition">
+                        <Upload className="w-5 h-5 text-[#08795d] mb-1" />
+                        <span className="text-xs font-bold text-slate-800">
+                          Upload Telebirr / CBE Screenshot
+                        </span>
+                        <span className="text-[10px] text-slate-400 mt-0.5">JPG or PNG (auto-compressed)</span>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleReceiptChange}
+                        />
+                      </label>
+                    ) : (
+                      <div className="rounded-xl border border-slate-200 bg-white p-2.5 flex items-center justify-between gap-3 shadow-xs">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <img
+                            src={receiptPreview}
+                            alt="Receipt"
+                            className="h-10 w-10 object-cover rounded-lg border border-slate-200"
+                          />
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-900 truncate">
+                              {receiptFile?.name || 'receipt.jpg'}
+                            </p>
+                            <p className="text-[10px] text-emerald-700 font-semibold">
+                              ✓ Ready to upload
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleRemoveReceipt}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600"
+                          title="Remove receipt"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSubmittingPayment}
+                    className="w-full h-12 rounded-xl bg-[#08795d] text-white font-bold text-xs sm:text-sm hover:bg-[#07684f] shadow-sm transition flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isSubmittingPayment ? (
+                      <>
+                        <LoaderCircle className="w-4 h-4 animate-spin text-white" />
+                        <span>Submitting payment proof...</span>
+                      </>
+                    ) : (
+                      <span>{t.submit || 'Submit Payment Proof'}</span>
+                    )}
+                  </button>
+                </form>
+              </div>
+
+              {/* Station Pickup Information Reminder */}
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs flex items-center justify-between text-xs">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Registered Pickup Location
+                  </span>
+                  <p className="text-xs font-bold text-slate-800 mt-0.5">
+                    Building {profile?.pickup_point || 'T22'} Minibus Station
+                  </p>
+                </div>
+                <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60">
+                  Fixed for Dorm
+                </span>
+              </div>
+            </div>
+          )}
+        </main>
+
+        {/* Floating Toast Notification */}
+        {toastMessage && (
+          <div className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
+            <div className="max-w-md rounded-2xl bg-slate-900/90 backdrop-blur px-4 py-2.5 text-center text-xs font-semibold text-white shadow-xl animate-fadeIn">
+              {toastMessage}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#f8f9fa] md:bg-[#f2f2f4] font-campus text-slate-900">
       {/* ======================================================== */}
@@ -725,40 +1105,6 @@ export default function StudentDashboardPage() {
           {/* ======================================================== */}
           {activeTab === 'home' && (
             <div className="space-y-4">
-              {/* Unsubscribed / Expired Alert if not active */}
-              {!isSubscriptionActive && (
-                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-xl bg-amber-200/70 text-amber-900 shrink-0 mt-0.5">
-                      <CreditCard className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-amber-900">{t.subRequired}</h3>
-                      <p className="text-xs text-amber-800 mt-0.5">
-                        {effectiveSubscriptionStatus === 'pending'
-                          ? isAmharic
-                            ? 'የክፍያ ማረጋገጫዎ በመጣራት ላይ ነው።'
-                            : 'Payment submitted and awaiting manager verification.'
-                          : t.subExpiredMsg}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('profile')}
-                    className="self-start sm:self-center px-4 py-2 bg-amber-800 text-white rounded-xl text-xs font-bold hover:bg-amber-900 transition-colors shadow-xs"
-                  >
-                    {effectiveSubscriptionStatus === 'pending'
-                      ? isAmharic
-                        ? 'ሁኔታ እይ'
-                        : 'View Status'
-                      : isAmharic
-                        ? 'እቅድ ምረጥ'
-                        : 'Renew Subscription'}
-                  </button>
-                </div>
-              )}
-
               {/* Meal Status Banner (Consolidated, no nested cards) */}
               <MealStatusCard mealContext={mealContext} pickupPoint={profile?.pickup_point} />
 
