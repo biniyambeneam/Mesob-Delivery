@@ -79,3 +79,67 @@ export function getMealWindowState(now = new Date()) {
 export function formatMealWindow(mealType) {
   return LOCAL_TIME_LABELS[mealType] ?? '';
 }
+
+const SOLD_OUT_RESET_STORAGE_KEY = 'campusfood_last_reset_meal_cycle';
+
+/**
+ * Checks if previous meal windows have closed and resets their sold-out dishes back to available.
+ * E.g., once Lunch closes / Dinner begins, all lunch dishes that were marked sold out are reset.
+ * Also at the end of each day or start of a new day, all sold out items from earlier meals are cleared.
+ */
+export async function resetClosedMealSoldOutState(supabaseClient) {
+  if (!supabaseClient) return;
+
+  try {
+    const now = new Date();
+    const zonedMinutes = getMinutesInZone(now);
+    const today = formatInTimeZone(now, ETHIOPIA_TIMEZONE, 'yyyy-MM-dd');
+
+    // Find which meal windows have strictly closed for today
+    // Breakfast window closes at 8*60 (14:00/2:00 LT)
+    // Lunch window closes at 13*60 (19:00/7:00 LT)
+    // Dinner window closes at 19*60 (01:00/1:00 LT)
+    const closedMealsToday = MEAL_WINDOWS.filter(
+      (window) => zonedMinutes >= window.endMinutes,
+    ).map((w) => w.mealType);
+
+    // Compute a cycle key representing closed windows today: e.g. "2026-10-15:Breakfast,Lunch"
+    const cycleKey = `${today}:${closedMealsToday.join(',')}`;
+    const lastResetKey = window?.localStorage?.getItem(SOLD_OUT_RESET_STORAGE_KEY);
+
+    // If meals closed today that haven't been reset yet
+    if (closedMealsToday.length > 0 && lastResetKey !== cycleKey) {
+      const { error: resetError } = await supabaseClient
+        .from('menu')
+        .update({ is_sold_out: false })
+        .in('meal_type', closedMealsToday)
+        .eq('is_sold_out', true);
+
+      if (!resetError) {
+        try {
+          window?.localStorage?.setItem(SOLD_OUT_RESET_STORAGE_KEY, cycleKey);
+        } catch {
+          // ignore localStorage error
+        }
+      }
+    }
+
+    // Also: when day changes (e.g. overnight before breakfast starts, or before lunch),
+    // ensure any leftover sold-out states from previous days are reset to available
+    const lastResetDate = lastResetKey ? lastResetKey.split(':')[0] : null;
+    if (lastResetDate && lastResetDate !== today) {
+      await supabaseClient
+        .from('menu')
+        .update({ is_sold_out: false })
+        .eq('is_sold_out', true);
+
+      try {
+        window?.localStorage?.setItem(SOLD_OUT_RESET_STORAGE_KEY, cycleKey);
+      } catch {
+        // ignore storage error
+      }
+    }
+  } catch (err) {
+    console.debug('Non-blocking sold-out reset check error:', err);
+  }
+}

@@ -6,7 +6,7 @@ import { useLanguage } from '../context/LanguageContext.jsx';
 import { playNotificationChime } from '../lib/sound.js';
 import { supabase } from '../lib/supabase.js';
 import { getSubscriptionDaysRemaining, getEffectiveSubscriptionStatus, isSubscriptionCurrentlyActive } from '../lib/subscription.js';
-import { DEV_MODE_ALWAYS_OPEN, getMealWindowState } from '../lib/time.js';
+import { DEV_MODE_ALWAYS_OPEN, getMealWindowState, resetClosedMealSoldOutState } from '../lib/time.js';
 import { formatMenuTitle, translateMealLabel } from '../lib/translations.js';
 import EmptyState from '../components/EmptyState.jsx';
 import MealStatusCard from '../components/MealStatusCard.jsx';
@@ -189,7 +189,10 @@ export default function StudentDashboardPage() {
   }, [focusedMeal, mealContext.focusDate, maybeShowArrivalNotice, profile]);
 
   useEffect(() => {
-    const syncMealContext = () => setMealContext(getMealWindowState());
+    const syncMealContext = () => {
+      setMealContext(getMealWindowState());
+      void resetClosedMealSoldOutState(supabase);
+    };
     syncMealContext();
     const timer = window.setInterval(syncMealContext, 60000);
     return () => window.clearInterval(timer);

@@ -6,7 +6,7 @@ import { useAuth } from '../context/useAuth.js';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import { getSubscriptionDaysRemaining } from '../lib/subscription.js';
 import { supabase } from '../lib/supabase.js';
-import { getMealWindowState } from '../lib/time.js';
+import { getMealWindowState, resetClosedMealSoldOutState } from '../lib/time.js';
 import { formatTotalsTitle } from '../lib/translations.js';
 import EmptyState from '../components/EmptyState.jsx';
 import MealStatusCard from '../components/MealStatusCard.jsx';
@@ -60,6 +60,9 @@ export default function ManagerDashboardPage() {
       try {
         if (!silent) setLoading(true);
         setError('');
+
+        // Check and automatically reset sold-out status for meals whose ordering window has closed
+        await resetClosedMealSoldOutState(supabase);
 
         const [ordersResult, menuResult, pendingSubscriptionsResult, activeSubscriptionsResult] =
           await Promise.all([
@@ -118,7 +121,10 @@ export default function ManagerDashboardPage() {
   );
 
   useEffect(() => {
-    const syncMealContext = () => setMealContext(getMealWindowState());
+    const syncMealContext = () => {
+      setMealContext(getMealWindowState());
+      void resetClosedMealSoldOutState(supabase);
+    };
     syncMealContext();
     const timer = window.setInterval(syncMealContext, 60000);
     return () => window.clearInterval(timer);
@@ -829,7 +835,7 @@ export default function ManagerDashboardPage() {
                 <div>
                   <h2 className="text-2xl font-bold">Current menu</h2>
                   <p className="mt-1 text-sm text-slate-600">
-                    Filter by meal type, manage portion limits, and toggle sold-out status.
+                    Filter by meal type, manage portion limits, and toggle sold-out status. Sold-out dishes automatically reset to available when their meal cycle closes.
                   </p>
                 </div>
 
