@@ -10,7 +10,7 @@ const Footer = () => {
   }
 
   return (
-    <footer className="mt-8 border-t border-slate-200/60 bg-transparent py-6 text-center text-xs text-slate-500 pb-20 md:pb-6">
+    <footer className="hidden md:block md:pl-64 border-t border-slate-200/60 bg-transparent py-5 text-center text-xs text-slate-500">
       <div className="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="flex items-center gap-1.5 font-campus">
           <span className="font-extrabold text-[#08795d]">Campus</span>

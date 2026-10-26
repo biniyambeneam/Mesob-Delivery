@@ -1,12 +1,49 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BellRing, CheckCircle2, ChefHat, Clock3, CreditCard, Fingerprint, Image as ImageIcon, Landmark, LoaderCircle, LogOut, Package, RefreshCw, Smartphone, Sparkles, Truck, Upload, UserRound, X } from 'lucide-react';
+import {
+  AlertCircle,
+  ArrowRight,
+  BellRing,
+  Check,
+  CheckCircle2,
+  ChefHat,
+  Clock3,
+  Copy,
+  CreditCard,
+  Fingerprint,
+  Heart,
+  Home,
+  Image as ImageIcon,
+  Landmark,
+  LoaderCircle,
+  LogOut,
+  MapPin,
+  Package,
+  PackageCheck,
+  RefreshCw,
+  ShoppingBag,
+  Smartphone,
+  Sparkles,
+  Truck,
+  Upload,
+  UserRound,
+  UtensilsCrossed,
+  X,
+} from 'lucide-react';
 import LanguageToggle from '../components/LanguageToggle.jsx';
 import { useAuth } from '../context/useAuth.js';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import { playNotificationChime } from '../lib/sound.js';
 import { supabase } from '../lib/supabase.js';
-import { getSubscriptionDaysRemaining, getEffectiveSubscriptionStatus, isSubscriptionCurrentlyActive } from '../lib/subscription.js';
-import { DEV_MODE_ALWAYS_OPEN, getMealWindowState, resetClosedMealSoldOutState } from '../lib/time.js';
+import {
+  getSubscriptionDaysRemaining,
+  getEffectiveSubscriptionStatus,
+  isSubscriptionCurrentlyActive,
+} from '../lib/subscription.js';
+import {
+  DEV_MODE_ALWAYS_OPEN,
+  getMealWindowState,
+  resetClosedMealSoldOutState,
+} from '../lib/time.js';
 import { formatMenuTitle, translateMealLabel } from '../lib/translations.js';
 import EmptyState from '../components/EmptyState.jsx';
 import MealStatusCard from '../components/MealStatusCard.jsx';
@@ -54,6 +91,36 @@ async function compressReceiptImage(file, maxWidth = 1200, quality = 0.8) {
 export default function StudentDashboardPage() {
   const { profile, refreshProfile, signOut } = useAuth();
   const { t, language } = useLanguage();
+  const isAmharic = language === 'am';
+
+  // Active Tab: 'home' | 'favorites' | 'orders' | 'profile'
+  const [activeTab, setActiveTab] = useState('home');
+
+  // Favorites state persisted per student in localStorage
+  const favoritesStorageKey = `cf_favorites_${profile?.id || 'guest'}`;
+  const [favorites, setFavorites] = useState(() => {
+    try {
+      const stored = localStorage.getItem(favoritesStorageKey);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const toggleFavorite = (item) => {
+    setFavorites((prev) => {
+      const next = prev.includes(item.id)
+        ? prev.filter((id) => id !== item.id)
+        : [...prev, item.id];
+      try {
+        localStorage.setItem(favoritesStorageKey, JSON.stringify(next));
+      } catch {
+        // ignore localStorage error
+      }
+      return next;
+    });
+  };
+
   const [mealContext, setMealContext] = useState(() => getMealWindowState());
   const [menuItems, setMenuItems] = useState([]);
   const [existingOrder, setExistingOrder] = useState(null);
@@ -64,6 +131,7 @@ export default function StudentDashboardPage() {
   const [receiptFile, setReceiptFile] = useState(null);
   const [receiptPreview, setReceiptPreview] = useState('');
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+  const [copiedBank, setCopiedBank] = useState('');
   const fileInputRef = useRef(null);
 
   const handleReceiptChange = (e) => {
@@ -85,6 +153,13 @@ export default function StudentDashboardPage() {
       fileInputRef.current.value = '';
     }
   };
+
+  const handleCopyAccount = (text, bank) => {
+    navigator.clipboard?.writeText(text);
+    setCopiedBank(bank);
+    setTimeout(() => setCopiedBank(''), 2000);
+  };
+
   const [error, setError] = useState('');
   const [selectedFood, setSelectedFood] = useState(null);
   const [arrivalNotice, setArrivalNotice] = useState(null);
@@ -316,6 +391,7 @@ export default function StudentDashboardPage() {
         if (insertError.code === '23505') {
           await loadDashboard();
           setToastMessage(`You already placed your ${item.meal_type.toLowerCase()} order.`);
+          setActiveTab('orders');
           return;
         }
 
@@ -344,6 +420,8 @@ export default function StudentDashboardPage() {
       setExistingOrder(confirmedOrder);
       setToastMessage(`${item.meal_type} order confirmed!`);
       await loadDashboard();
+      // Automatically switch to orders tracking tab
+      setActiveTab('orders');
     } catch (submitError) {
       setError(submitError.message || 'Unable to submit order.');
     } finally {
@@ -418,6 +496,7 @@ export default function StudentDashboardPage() {
       setPaymentReference('');
       handleRemoveReceipt();
       await refreshProfile();
+      setToastMessage(isAmharic ? 'የክፍያ ማረጋገጫ ተልኳል። ማኔጀሩ እስኪያረጋግጥ ይጠብቁ።' : 'Payment submitted for manager verification.');
     } catch (submitError) {
       setError(submitError.message || 'Unable to submit payment reference.');
     } finally {
@@ -435,7 +514,7 @@ export default function StudentDashboardPage() {
 
     if (isSoldOut) {
       setToastMessage(
-        language === 'am'
+        isAmharic
           ? 'ይህ ምግብ ለዛሬ አልቋል። እባክዎ ሌላ ምግብ ይምረጡ።'
           : 'This meal is currently sold out. Please choose another option.'
       );
@@ -446,7 +525,7 @@ export default function StudentDashboardPage() {
       const nextOpenTime = mealContext.nextMealStartsAt ?? 'the next local meal window';
       const mealLabel = translateMealLabel(t, item.meal_type);
       setToastMessage(
-        language === 'am'
+        isAmharic
           ? `ትዕዛዝ ዝግ ነው። የ${mealLabel} ሰዓት ${nextOpenTime} ይከፈታል።`
           : `Ordering closed. The ${mealLabel} window opens at ${nextOpenTime}.`,
       );
@@ -459,6 +538,8 @@ export default function StudentDashboardPage() {
   const handleRefresh = async () => {
     setError('');
     await refreshProfile();
+    await loadDashboard();
+    setToastMessage(isAmharic ? 'መረጃዎች ታድሰዋል' : 'Dashboard refreshed');
   };
 
   const handleConfirmOrder = async () => {
@@ -479,590 +560,1058 @@ export default function StudentDashboardPage() {
     setArrivalNotice(null);
   };
 
+  // Filter eligible favorite dishes for the current meal window
+  const eligibleFavoriteDishes = useMemo(() => {
+    return menuItems.filter((item) => favorites.includes(item.id));
+  }, [menuItems, favorites]);
+
   return (
-    <div className="min-h-screen px-2 py-2 md:px-6 md:py-8 lg:px-10">
-      <div className="mx-auto max-w-6xl space-y-2 pb-24 md:space-y-6">
-        <header className="panel w-full px-5 py-6 md:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="rounded-2xl bg-gradient-to-br from-emerald-100 via-white to-amber-100 p-3 text-emerald-800 shadow-sm">
-                  <UserRound className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                    {t.welcomeBack}
-                  </p>
-                  <h1 className="mt-1 bg-gradient-to-r from-slate-950 via-emerald-800 to-amber-700 bg-clip-text text-4xl font-extrabold tracking-tight text-transparent">
-                    {profile?.name ? `${t.hello} ${profile.name}` : t.mealCredits}
-                  </h1>
-                </div>
-              </div>
+    <div className="min-h-screen bg-[#f8f9fa] md:bg-[#f2f2f4] font-campus text-slate-900">
+      {/* ======================================================== */}
+      {/* DESKTOP SIDEBAR NAVIGATION (Hidden on mobile, md:flex)   */}
+      {/* ======================================================== */}
+      <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:bg-white md:border-r md:border-slate-200/80 md:z-30 p-5 shadow-xs">
+        {/* Brand Wordmark */}
+        <div className="flex items-center gap-1.5 px-2 py-2 mb-8">
+          <span className="text-2xl font-extrabold text-[#08795d] tracking-tight">Campus</span>
+          <span className="text-2xl font-extrabold text-[#d48431] tracking-tight">Food</span>
+        </div>
+
+        {/* Navigation Links */}
+        <nav className="space-y-1.5 flex-1" aria-label="Desktop Navigation">
+          <button
+            type="button"
+            onClick={() => setActiveTab('home')}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+              activeTab === 'home'
+                ? 'bg-emerald-50 text-[#08795d] border-l-4 border-[#08795d]'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <Home className="w-5 h-5 shrink-0" />
+            <span>{t.home || 'Home'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('favorites')}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+              activeTab === 'favorites'
+                ? 'bg-emerald-50 text-[#08795d] border-l-4 border-[#08795d]'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <Heart
+              className={`w-5 h-5 shrink-0 ${
+                favorites.length > 0 ? 'text-rose-500 fill-rose-500' : ''
+              }`}
+            />
+            <span>{t.favorites || 'Favorites'}</span>
+            {favorites.length > 0 && (
+              <span className="ml-auto bg-rose-100 text-rose-700 text-[11px] font-bold px-2 py-0.5 rounded-full">
+                {favorites.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('orders')}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+              activeTab === 'orders'
+                ? 'bg-emerald-50 text-[#08795d] border-l-4 border-[#08795d]'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <Package className="w-5 h-5 shrink-0" />
+            <span>{t.orders || 'Orders'}</span>
+            {existingOrder && (
+              <span className="ml-auto w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('profile')}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+              activeTab === 'profile'
+                ? 'bg-emerald-50 text-[#08795d] border-l-4 border-[#08795d]'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <UserRound className="w-5 h-5 shrink-0" />
+            <span>{t.profile || 'Profile'}</span>
+          </button>
+        </nav>
+
+        {/* Sidebar Footer: Mini User Pill */}
+        <div className="pt-4 border-t border-slate-100 space-y-2">
+          <div className="flex items-center gap-3 px-2 py-1">
+            <div className="w-9 h-9 rounded-full bg-emerald-100 text-[#08795d] font-bold flex items-center justify-center shrink-0">
+              {profile?.name ? profile.name.charAt(0).toUpperCase() : 'S'}
             </div>
-            <div className="flex flex-wrap gap-3">
-              <button type="button" className="btn-secondary" onClick={handleRefresh}>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                {t.refresh}
-              </button>
-              <button type="button" className="btn-secondary" onClick={signOut}>
-                <LogOut className="mr-2 h-4 w-4" />
-                {t.signOut}
-              </button>
-              <LanguageToggle />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold text-slate-900 truncate">{profile?.name || 'Student'}</p>
+              <p className="text-[10px] text-slate-500 truncate">Station: Building {profile?.pickup_point || 'T22'}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={signOut}
+            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>{t.signOut}</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* ======================================================== */}
+      {/* MAIN CONTENT REGION (Offset by sidebar on desktop)      */}
+      {/* ======================================================== */}
+      <div className="md:pl-64 flex flex-col min-h-screen">
+        {/* COMPACT TOP HEADER */}
+        <header className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-slate-200/70 px-4 py-3 sm:px-6">
+          <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+            {/* Left: Mobile Wordmark & Student Greeting */}
+            <div>
+              <div className="flex items-center gap-1.5 md:hidden mb-0.5">
+                <span className="text-lg font-extrabold text-[#08795d] tracking-tight">Campus</span>
+                <span className="text-lg font-extrabold text-[#d48431] tracking-tight">Food</span>
+              </div>
+              <h1 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-1.5">
+                <span>{t.hello}</span>
+                <span className="text-[#08795d]">{profile?.name || 'Student'}</span>
+                <span className="inline-block text-base">👋</span>
+              </h1>
+            </div>
+
+            {/* Right: Station Badge & Order Quick Pill */}
+            <div className="flex items-center gap-2.5">
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#08795d] bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60">
+                <MapPin className="w-3 h-3 text-[#08795d]" />
+                <span>Station: {profile?.pickup_point || 'T22'}</span>
+              </span>
+
+              {isSubscriptionActive && (
+                <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">
+                  <CreditCard className="w-3 h-3 text-slate-500" />
+                  <span>{daysRemaining} {t.remaining}</span>
+                </span>
+              )}
             </div>
           </div>
         </header>
 
-        {isSubscriptionActive ? (
-          <div className="w-full rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 md:rounded-2xl md:px-4 md:py-3">
-            <div className="flex items-center gap-3">
-              <span className="inline-flex rounded-full bg-emerald-700 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-white">
-                {t.mealCredits}
-              </span>
-              <p className="text-sm text-emerald-900">
-                {daysRemaining} {t.remaining}
-              </p>
+        {/* SCROLLABLE MAIN CONTENT WRAPPER */}
+        <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-4 sm:py-6 pb-28 md:pb-12 space-y-4">
+          {/* Error Banner */}
+          {error && (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs sm:text-sm text-rose-700 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+              <div className="flex-1">{error}</div>
+              <button
+                type="button"
+                onClick={() => setError('')}
+                className="text-rose-400 hover:text-rose-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
-          </div>
-        ) : null}
+          )}
 
-        {isSubscriptionActive ? (
-          <MealStatusCard mealContext={mealContext} pickupPoint={profile?.pickup_point} />
-        ) : null}
-
-
-        {error ? (
-          <div className="w-full rounded-3xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700 md:rounded-2xl md:px-4 md:py-3">
-            {error}
-          </div>
-        ) : null}
-
-        {!isSubscriptionActive && effectiveSubscriptionStatus !== 'pending' ? (
-          <section className="panel w-full px-5 py-6 md:p-6">
-            <div className="flex items-start gap-4">
-              <div className="rounded-2xl bg-amber-100 p-3">
-                <CreditCard className="h-6 w-6 text-amber-800" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold">{t.subRequired}</h2>
-                <p className="mt-2 max-w-2xl text-sm text-slate-600">{t.subExpiredMsg}</p>
-
-                <div className="mt-5 space-y-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-800">
-                    Step 1: Choose Your Monthly Meal Plan
-                  </p>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedPlan('2meals')}
-                      className={`flex flex-col text-left p-4 rounded-2xl border transition ${
-                        selectedPlan === '2meals'
-                          ? 'border-emerald-600 bg-emerald-50/80 ring-2 ring-emerald-600/20'
-                          : 'border-slate-200 bg-white hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <span className="font-bold text-slate-900">2 Meals / Day</span>
-                        <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
-                          4,500 Birr
-                        </span>
-                      </div>
-                      <p className="mt-1 text-xs text-slate-600">Lunch & Dinner (30 Days)</p>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setSelectedPlan('3meals')}
-                      className={`flex flex-col text-left p-4 rounded-2xl border transition ${
-                        selectedPlan === '3meals'
-                          ? 'border-emerald-600 bg-emerald-50/80 ring-2 ring-emerald-600/20'
-                          : 'border-slate-200 bg-white hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <span className="font-bold text-slate-900">3 Meals / Day</span>
-                        <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
-                          6,700 Birr
-                        </span>
-                      </div>
-                      <p className="mt-1 text-xs text-slate-600">Breakfast, Lunch & Dinner (30 Days)</p>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="mt-5 rounded-3xl border border-emerald-100 bg-gradient-to-r from-slate-50 via-white to-emerald-50 p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-800">
-                    Step 2: Transfer to Cafeteria Account
-                  </p>
-                  <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="rounded-xl bg-emerald-100 p-2.5">
-                          <Landmark className="h-5 w-5 text-emerald-800" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">CBE Account</p>
-                          <p className="text-base font-bold text-slate-950 select-all">1000690418917</p>
-                        </div>
-                      </div>
-                      <p className="text-xs text-slate-600 mt-1">
-                        Holder: <strong className="text-slate-800">Biniyam Yimen Tilahun</strong>
-                      </p>
+          {/* ======================================================== */}
+          {/* TAB 1: HOME (Current Meal Window & Available Menu)       */}
+          {/* ======================================================== */}
+          {activeTab === 'home' && (
+            <div className="space-y-4">
+              {/* Unsubscribed / Expired Alert if not active */}
+              {!isSubscriptionActive && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-xl bg-amber-200/70 text-amber-900 shrink-0 mt-0.5">
+                      <CreditCard className="w-5 h-5" />
                     </div>
-
-                    <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="rounded-xl bg-sky-100 p-2.5">
-                          <Smartphone className="h-5 w-5 text-sky-800" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Telebirr Phone</p>
-                          <p className="text-base font-bold text-slate-950 select-all">0950271983</p>
-                        </div>
-                      </div>
-                      <p className="text-xs text-slate-600 mt-1">
-                        Name: <strong className="text-slate-800">Biniam</strong>
+                    <div>
+                      <h3 className="text-sm font-bold text-amber-900">{t.subRequired}</h3>
+                      <p className="text-xs text-amber-800 mt-0.5">
+                        {effectiveSubscriptionStatus === 'pending'
+                          ? isAmharic
+                            ? 'የክፍያ ማረጋገጫዎ በመጣራት ላይ ነው።'
+                            : 'Payment submitted and awaiting manager verification.'
+                          : t.subExpiredMsg}
                       </p>
                     </div>
                   </div>
-                </div>
-
-                {profile?.payment_rejection_reason ? (
-                  <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                    <strong>Payment Rejected:</strong> {profile.payment_rejection_reason}
-                  </div>
-                ) : null}
-
-                <form className="mt-6 space-y-4" onSubmit={handlePaymentSubmit}>
-                  <label className="block space-y-2">
-                    <span className="text-sm font-medium text-slate-700">
-                      Step 3: {t.enterRef}
-                    </span>
-                    <input
-                      className="input"
-                      value={paymentReference}
-                      onChange={(event) => setPaymentReference(event.target.value)}
-                      placeholder="Example: CBE123456789 or Telebirr Txn ID"
-                    />
-                  </label>
-
-                  <div className="space-y-2">
-                    <span className="text-sm font-medium text-slate-700">
-                      Step 4: Attach Receipt / Screenshot (Recommended)
-                    </span>
-
-                    {!receiptPreview ? (
-                      <label className="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50/70 hover:bg-slate-100/80 hover:border-emerald-500 cursor-pointer transition">
-                        <Upload className="h-6 w-6 text-emerald-700 mb-1" />
-                        <span className="text-sm font-semibold text-slate-800">
-                          Click to upload receipt or snap photo
-                        </span>
-                        <span className="text-xs text-slate-500 mt-0.5">
-                          Upload your Telebirr / CBE transaction screenshot
-                        </span>
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handleReceiptChange}
-                        />
-                      </label>
-                    ) : (
-                      <div className="rounded-2xl border border-slate-200 bg-white p-3 flex items-center justify-between gap-3 shadow-sm">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <img
-                            src={receiptPreview}
-                            alt="Receipt Preview"
-                            className="h-14 w-14 object-cover rounded-xl border border-slate-200"
-                          />
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-slate-900 truncate">
-                              {receiptFile?.name || 'receipt-screenshot.jpg'}
-                            </p>
-                            <p className="text-xs text-emerald-700 font-medium">
-                              ✓ Ready to upload with verification
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleRemoveReceipt}
-                          className="rounded-xl p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition"
-                          title="Remove screenshot"
-                        >
-                          <X className="h-5 w-5" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
                   <button
-                    type="submit"
-                    className="btn-primary w-full"
-                    disabled={isSubmittingPayment}
+                    type="button"
+                    onClick={() => setActiveTab('profile')}
+                    className="self-start sm:self-center px-4 py-2 bg-amber-800 text-white rounded-xl text-xs font-bold hover:bg-amber-900 transition-colors shadow-xs"
                   >
-                    {isSubmittingPayment ? (
-                      <>
-                        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                        Submitting payment for verification...
-                      </>
-                    ) : (
-                      t.submit
-                    )}
+                    {effectiveSubscriptionStatus === 'pending'
+                      ? isAmharic
+                        ? 'ሁኔታ እይ'
+                        : 'View Status'
+                      : isAmharic
+                        ? 'እቅድ ምረጥ'
+                        : 'Renew Subscription'}
                   </button>
-                </form>
-              </div>
-            </div>
-          </section>
-        ) : null}
-
-        {!isSubscriptionActive && effectiveSubscriptionStatus === 'pending' ? (
-          <section className="panel w-full px-5 py-6 md:p-6">
-            <div className="flex items-start gap-4">
-              <div className="rounded-2xl bg-sky-100 p-3">
-                <LoaderCircle className="h-6 w-6 animate-spin text-sky-800" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold">{t.pendingVer}</h2>
-                <p className="mt-2 max-w-2xl text-sm text-slate-600">
-                  Payment Submitted. We are verifying your transaction reference (
-                  <strong>{profile?.last_transaction_ref}</strong>). Your dashboard will unlock once
-                  the manager approves it.
-                </p>
-              </div>
-            </div>
-          </section>
-        ) : null}
-
-        {isSubscriptionActive && existingOrder ? (
-          <div className="panel w-full px-5 py-6 md:p-8 border-emerald-400 shadow-[0_20px_60px_-25px_rgba(5,150,105,0.35)]">
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-slate-100 pb-5">
-              <div className="flex items-start gap-4">
-                <div className="rounded-2xl bg-emerald-100 p-3.5 text-emerald-800">
-                  <CheckCircle2 className="h-7 w-7" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800 uppercase tracking-wide">
-                      {translateMealLabel(t, focusedMeal)} Order Locked
-                    </span>
-                    <span className="text-xs text-slate-400 font-medium">1 of 1 Meal</span>
+              )}
+
+              {/* Meal Status Banner (Consolidated, no nested cards) */}
+              <MealStatusCard mealContext={mealContext} pickupPoint={profile?.pickup_point} />
+
+              {/* If Order Already Placed Today: Quick Locked Banner with Link to Orders */}
+              {isSubscriptionActive && existingOrder && (
+                <div className="rounded-2xl border border-emerald-300 bg-gradient-to-r from-emerald-50 via-white to-emerald-50 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-[#08795d] shrink-0">
+                      <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-[#08795d] uppercase tracking-wider">
+                          {translateMealLabel(t, focusedMeal)} {t.orderLocked || 'Order Locked'}
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-medium">
+                          ({t.oneMealPerWindow || '1 meal per window'})
+                        </span>
+                      </div>
+                      <p className="text-sm font-extrabold text-slate-900 mt-0.5">
+                        {existingOrder.menu?.name || 'Your selected dish'}
+                      </p>
+                    </div>
                   </div>
-                  <h2 className="text-2xl font-extrabold text-slate-900 mt-1">
-                    {existingOrder.menu?.name || 'Your Selected Dish'}
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('orders')}
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#08795d] text-white text-xs font-bold hover:bg-[#07684f] transition-all shadow-xs"
+                  >
+                    <span>{isAmharic ? 'የጉዞ ሁኔታ እይ' : 'Track Delivery'}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {/* Menu Section Heading */}
+              <div className="flex items-center justify-between pt-1">
+                <div>
+                  <h2 className="text-lg sm:text-xl font-extrabold text-[#101426] tracking-tight">
+                    {formatMenuTitle(t, focusedMeal)}
                   </h2>
-                  <p className="text-sm text-slate-600 mt-1">
-                    Your {translateMealLabel(t, focusedMeal)?.toLowerCase()} selection has been placed and confirmed. The menu is closed for this meal.
+                  <p className="text-xs text-slate-500 font-normal">
+                    {isAmharic
+                      ? 'ለአሁኑ የምግብ ሰዓት ከተዘጋጁት ምግቦች አንዱን ይምረጡ'
+                      : 'Choose your single dish for the current meal window'}
                   </p>
                 </div>
               </div>
 
-              <div className="rounded-2xl bg-slate-50 border border-slate-200/80 px-4 py-3 self-start sm:self-auto text-right">
-                <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">{t.status}</p>
-                <div className="mt-1">
-                  {existingOrder.status === 'Arrived' ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
-                      <span className="h-2 w-2 rounded-full bg-emerald-600 animate-pulse" />
-                      {t.arrived || 'Arrived'}
-                    </span>
-                  ) : existingOrder.status === 'Packed' ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-100 px-3 py-1 text-xs font-bold text-sky-800">
-                      <span className="h-2 w-2 rounded-full bg-sky-600 animate-pulse" />
-                      {t.packed || 'Packed'}
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
-                      <span className="h-2 w-2 rounded-full bg-amber-600" />
-                      {t.cookingInKitchen || 'Cooking in Kitchen'}
-                    </span>
-                  )}
+              {/* Menu Grid / Empty States */}
+              {loading ? (
+                <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+                  <LoaderCircle className="w-6 h-6 animate-spin text-[#08795d] mx-auto mb-2" />
+                  <span>Loading meal options...</span>
+                </div>
+              ) : isSubscriptionActive && !existingOrder && !DEV_MODE_ALWAYS_OPEN && mealContext.activeMeal !== focusedMeal ? (
+                <EmptyState
+                  title={`${translateMealLabel(t, focusedMeal)} ordering is currently closed.`}
+                  description={
+                    focusedMeal === 'Breakfast'
+                      ? 'Breakfast window is 1:00 - 2:00 Local Time (7:00 - 8:00 AM).'
+                      : focusedMeal === 'Lunch'
+                        ? 'Lunch window is 5:00 - 7:00 Local Time (11:00 AM - 1:00 PM).'
+                        : 'Dinner window is 11:00 - 1:00 Local Time (5:00 - 7:00 PM).'
+                  }
+                />
+              ) : menuItems.length > 0 ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {menuItems.map((item) => (
+                    <OrderCard
+                      key={item.id}
+                      item={item}
+                      onOrder={handleOrderClick}
+                      loading={submittingId === item.id}
+                      isActiveWindow={true}
+                      disabled={Boolean(existingOrder)}
+                      isFavorite={favorites.includes(item.id)}
+                      onToggleFavorite={toggleFavorite}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  title={isAmharic ? 'ምንም ሜኑ አልተጨመረም' : 'No menu items yet'}
+                  description={
+                    isAmharic
+                      ? 'ማኔጀሩ ለአሁኑ ሰዓት ምግብ እስካሁን አላስገባም።'
+                      : `The cafeteria manager has not added any ${focusedMeal.toLowerCase()} items yet.`
+                  }
+                />
+              )}
+            </div>
+          )}
+
+          {/* ======================================================== */}
+          {/* TAB 2: FAVORITES (Eligible favorites for current window) */}
+          {/* ======================================================== */}
+          {activeTab === 'favorites' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-extrabold text-[#101426] tracking-tight">
+                    {t.yourFavorites || 'Your Favorites'}
+                  </h2>
+                  <p className="text-xs text-slate-500 font-normal">
+                    {translateMealLabel(t, focusedMeal)} {t.menuTitle}
+                  </p>
                 </div>
               </div>
-            </div>
 
-            {/* Real-time Order Status (Packed & Arrived) */}
-            <div className="mt-6">
-              {existingOrder.status === 'Arrived' ? (
-                <div className="rounded-2xl border-2 border-emerald-400 bg-gradient-to-r from-emerald-50 via-white to-emerald-50 p-5 shadow-sm">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-md">
-                      <Truck className="h-6 w-6" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-800">
-                          <span className="h-2 w-2 rounded-full bg-emerald-600 animate-pulse" />
-                          {t.arrived || 'Arrived at Campus'}
-                        </span>
-                        <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
-                          Station: Building {profile?.pickup_point || 'T22 / T34'}
-                        </span>
-                      </div>
-                      <h3 className="mt-2 text-xl font-extrabold text-slate-900">
-                        {t.arrivedTitle || 'Food Arrived at Pickup Station!'}
+              {eligibleFavoriteDishes.length > 0 ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {eligibleFavoriteDishes.map((item) => (
+                    <OrderCard
+                      key={item.id}
+                      item={item}
+                      onOrder={handleOrderClick}
+                      loading={submittingId === item.id}
+                      isActiveWindow={true}
+                      disabled={Boolean(existingOrder)}
+                      isFavorite={true}
+                      onToggleFavorite={toggleFavorite}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center mx-auto">
+                    <Heart className="w-6 h-6 stroke-rose-400" />
+                  </div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    {t.noFavorites || 'No favorite dishes for this meal yet.'}
+                  </h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                    {t.addFavoritesFromHome || 'Tap the heart on any dish from the menu to save it here.'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('home')}
+                    className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#08795d] text-white text-xs font-bold hover:bg-[#07684f] transition-all shadow-xs"
+                  >
+                    <span>{t.browseMenu || "Browse Today's Menu"}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ======================================================== */}
+          {/* TAB 3: ORDERS (Dedicated 3-Stage Order Progress Tracker)  */}
+          {/* ======================================================== */}
+          {activeTab === 'orders' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-extrabold text-[#101426] tracking-tight">
+                    {isAmharic ? 'የትዕዛዝ ሁኔታ' : 'Active Order Status'}
+                  </h2>
+                  <p className="text-xs text-slate-500 font-normal">
+                    {translateMealLabel(t, focusedMeal)} • {mealContext.currentDateLabel}
+                  </p>
+                </div>
+              </div>
+
+              {existingOrder ? (
+                <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-6 shadow-xs space-y-6">
+                  {/* Dish Summary Header */}
+                  <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-4">
+                    <div>
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#08795d] uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded-full">
+                        {translateMealLabel(t, focusedMeal)}
+                      </span>
+                      <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-1">
+                        {existingOrder.menu?.name || 'Selected Dish'}
                       </h3>
-                      <p className="mt-1 text-sm text-slate-600">
-                        {t.arrivedDesc ||
-                          'Your food has arrived! Bring your Student ID to collect it from the minibus.'}
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {isAmharic
+                          ? 'ትዕዛዝዎ ተቀብለናል ወደ ማብሰያ ክፍል ተልኳል።'
+                          : 'Your dish selection is locked in and dispatched with the campus batch.'}
                       </p>
                     </div>
-                  </div>
-                </div>
-              ) : existingOrder.status === 'Packed' ? (
-                <div className="rounded-2xl border border-sky-300 bg-gradient-to-r from-sky-50 via-white to-sky-50 p-5 shadow-sm">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-sky-600 text-white shadow-md">
-                      <Package className="h-6 w-6" />
+
+                    <div className="text-right shrink-0">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">
+                        {t.status}
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold mt-1 bg-emerald-100 text-emerald-800">
+                        {existingOrder.status === 'Arrived'
+                          ? t.arrived || 'Arrived'
+                          : existingOrder.status === 'Packed'
+                            ? t.packed || 'Packed'
+                            : t.cookingInKitchen || 'Cooking'}
+                      </span>
                     </div>
-                    <div className="flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-sky-800">
-                          <span className="h-2 w-2 rounded-full bg-sky-600 animate-ping" />
+                  </div>
+
+                  {/* 3-STAGE PROGRESS TIMELINE */}
+                  <div className="py-2">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">
+                      {isAmharic ? 'የእድገት ደረጃ' : 'Delivery Progress'}
+                    </p>
+
+                    <div className="grid grid-cols-3 gap-2 relative">
+                      {/* Stage 1: Cooking in Kitchen */}
+                      <div className="flex flex-col items-center text-center">
+                        <div
+                          className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition-all ${
+                            existingOrder.status === 'Packed' || existingOrder.status === 'Arrived'
+                              ? 'bg-emerald-600 text-white shadow-sm'
+                              : 'bg-emerald-500 text-white ring-4 ring-emerald-100 animate-pulse'
+                          }`}
+                        >
+                          {existingOrder.status === 'Packed' || existingOrder.status === 'Arrived' ? (
+                            <Check className="w-5 h-5 stroke-[3]" />
+                          ) : (
+                            <ChefHat className="w-5 h-5" />
+                          )}
+                        </div>
+                        <span className="text-xs font-bold text-slate-900 mt-2">
+                          {t.cookingInKitchen || 'Cooking'}
+                        </span>
+                        <span className="text-[10px] text-slate-500 leading-tight">
+                          {isAmharic ? 'ካፊቴሪያ ማብሰያ' : 'Central Kitchen'}
+                        </span>
+                      </div>
+
+                      {/* Stage 2: Packed */}
+                      <div className="flex flex-col items-center text-center">
+                        <div
+                          className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition-all ${
+                            existingOrder.status === 'Arrived'
+                              ? 'bg-emerald-600 text-white shadow-sm'
+                              : existingOrder.status === 'Packed'
+                                ? 'bg-sky-600 text-white ring-4 ring-sky-100 animate-pulse'
+                                : 'bg-slate-100 text-slate-400'
+                          }`}
+                        >
+                          {existingOrder.status === 'Arrived' ? (
+                            <Check className="w-5 h-5 stroke-[3]" />
+                          ) : (
+                            <Package className="w-5 h-5" />
+                          )}
+                        </div>
+                        <span
+                          className={`text-xs font-bold mt-2 ${
+                            existingOrder.status === 'Packed' || existingOrder.status === 'Arrived'
+                              ? 'text-slate-900'
+                              : 'text-slate-400'
+                          }`}
+                        >
                           {t.packed || 'Packed'}
                         </span>
-                        <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
-                          En Route to Campus
+                        <span className="text-[10px] text-slate-500 leading-tight">
+                          {isAmharic ? 'በሚኒባስ ጉዞ ላይ' : 'En Route Minibus'}
                         </span>
                       </div>
-                      <h3 className="mt-2 text-xl font-extrabold text-slate-900">
-                        {t.packedOnWay || 'Packed & On The Way'}
-                      </h3>
-                      <p className="mt-1 text-sm text-slate-600">
-                        {t.packedDesc ||
-                          'Your meal is prepared, boxed into the delivery vehicle, and en route to campus.'}
-                      </p>
+
+                      {/* Stage 3: Arrived */}
+                      <div className="flex flex-col items-center text-center">
+                        <div
+                          className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition-all ${
+                            existingOrder.status === 'Arrived'
+                              ? 'bg-[#08795d] text-white ring-4 ring-emerald-200 shadow-md'
+                              : 'bg-slate-100 text-slate-400'
+                          }`}
+                        >
+                          <Truck className="w-5 h-5" />
+                        </div>
+                        <span
+                          className={`text-xs font-bold mt-2 ${
+                            existingOrder.status === 'Arrived' ? 'text-emerald-800' : 'text-slate-400'
+                          }`}
+                        >
+                          {t.arrived || 'Arrived'}
+                        </span>
+                        <span className="text-[10px] text-slate-500 leading-tight">
+                          Station {profile?.pickup_point || 'T22/T34'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stage Details Callout */}
+                  <div
+                    className={`rounded-xl p-3.5 text-xs ${
+                      existingOrder.status === 'Arrived'
+                        ? 'bg-emerald-50 border border-emerald-200 text-emerald-900 font-medium'
+                        : existingOrder.status === 'Packed'
+                          ? 'bg-sky-50 border border-sky-200 text-sky-900 font-medium'
+                          : 'bg-amber-50/70 border border-amber-200/80 text-amber-900'
+                    }`}
+                  >
+                    {existingOrder.status === 'Arrived'
+                      ? t.arrivedDesc || 'Your food has arrived! Bring your Student ID to collect it from the minibus.'
+                      : existingOrder.status === 'Packed'
+                        ? t.packedDesc || 'Your meal is prepared, boxed into the delivery vehicle, and en route to campus.'
+                        : t.cookingDesc || 'All cafeteria orders are cooked together before departure. When all meals are loaded into the minibus, this will change to Packed.'}
+                  </div>
+
+                  {/* Read-Only Pickup Station & Student ID Metadata */}
+                  <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+                    <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                        {t.assignedPickupStation || 'Pickup Station'}
+                      </span>
+                      <span className="text-sm font-extrabold text-slate-900 flex items-center gap-1 mt-0.5">
+                        <MapPin className="w-3.5 h-3.5 text-[#08795d]" />
+                        Building {profile?.pickup_point || 'T22 / T34'}
+                      </span>
+                    </div>
+
+                    <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                        {t.studentId || 'Student ID'}
+                      </span>
+                      <span className="text-sm font-extrabold text-slate-900 flex items-center gap-1 mt-0.5">
+                        <Fingerprint className="w-3.5 h-3.5 text-[#08795d]" />
+                        {profile?.identity_number || 'N/A'}
+                      </span>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50/70 via-white to-amber-50/50 p-5">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-sm">
-                      <ChefHat className="h-6 w-6" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-amber-800">
-                          {t.cookingInKitchen || 'Cooking in Kitchen'}
-                        </span>
-                      </div>
-                      <h3 className="mt-2 text-xl font-bold text-slate-900">
-                        {t.cookingInKitchen || 'Cooking in Kitchen'}
-                      </h3>
-                      <p className="mt-1 text-sm text-slate-600">
-                        {t.cookingDesc ||
-                          'All cafeteria orders are cooked together before departure. When all meals are loaded into the minibus, this will change to Packed.'}
-                      </p>
-                    </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                    <Package className="w-6 h-6" />
                   </div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    {t.noActiveOrder || 'No active order'}
+                  </h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                    {t.noActiveOrderDesc || 'Your confirmed meal order and live delivery progress will appear here.'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('home')}
+                    className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#08795d] text-white text-xs font-bold hover:bg-[#07684f] transition-all shadow-xs"
+                  >
+                    <span>{t.browseMenu || "Browse Today's Menu"}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               )}
             </div>
+          )}
 
-            {/* Pickup Location Reminder */}
-            <div className="mt-6 p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-slate-50 border border-emerald-100 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-white shadow-sm border border-slate-200 text-emerald-700">
-                  <Truck className="h-5 w-5" />
+          {/* ======================================================== */}
+          {/* TAB 4: PROFILE (Account, Subscription & Renewal Flow)    */}
+          {/* ======================================================== */}
+          {activeTab === 'profile' && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-extrabold text-[#101426] tracking-tight">
+                {t.profile || 'Student Profile'}
+              </h2>
+
+              {/* Student Identity Card */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-100 to-amber-100 text-[#08795d] font-black text-xl flex items-center justify-center shrink-0 shadow-xs">
+                    {profile?.name ? profile.name.charAt(0).toUpperCase() : 'S'}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-lg font-bold text-slate-900 truncate">
+                      {profile?.name || 'Student Name'}
+                    </h3>
+                    <p className="text-xs text-slate-500">{profile?.phone || 'Phone number'}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                        ID: {profile?.identity_number || 'N/A'}
+                      </span>
+                      <span className="text-[11px] font-semibold text-[#08795d] bg-emerald-50 px-2 py-0.5 rounded-md">
+                        Dorm: Building {profile?.pickup_point || 'T22'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
+              </div>
+
+              {/* Subscription Summary Card */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-slate-900">
+                    {t.subscriptionDetails || 'Subscription Details'}
+                  </h3>
+                  <span
+                    className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full uppercase ${
+                      isSubscriptionActive
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : effectiveSubscriptionStatus === 'pending'
+                          ? 'bg-sky-100 text-sky-800'
+                          : 'bg-rose-100 text-rose-800'
+                    }`}
+                  >
+                    {isSubscriptionActive
+                      ? 'Active'
+                      : effectiveSubscriptionStatus === 'pending'
+                        ? 'Pending'
+                        : 'Expired'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div className="rounded-xl bg-emerald-50/70 p-3 border border-emerald-100">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 block">
+                      {t.mealCredits}
+                    </span>
+                    <span className="text-xl font-black text-[#08795d]">
+                      {daysRemaining} {t.remaining}
+                    </span>
+                  </div>
+
+                  <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                      {t.daysRemainingLabel || 'Status'}
+                    </span>
+                    <span className="text-sm font-bold text-slate-800">
+                      {isSubscriptionActive
+                        ? '30-Day Plan Active'
+                        : effectiveSubscriptionStatus === 'pending'
+                          ? 'Verification in Progress'
+                          : 'Renewal Required'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pending Verification Notice */}
+              {effectiveSubscriptionStatus === 'pending' && (
+                <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 flex items-start gap-3">
+                  <LoaderCircle className="w-5 h-5 text-sky-700 animate-spin shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-bold text-sky-900">{t.pendingVer}</h4>
+                    <p className="text-xs text-sky-800 mt-1 leading-relaxed">
+                      Payment Submitted. We are verifying your transaction reference (
+                      <strong>{profile?.last_transaction_ref}</strong>). Your dashboard will unlock once
+                      the cafeteria manager approves it.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Four-Step Renewal Process (When expired or unsubscribed) */}
+              {!isSubscriptionActive && effectiveSubscriptionStatus !== 'pending' && (
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs space-y-4">
+                  <div className="border-b border-slate-100 pb-3">
+                    <h3 className="text-base font-bold text-slate-900">
+                      {isAmharic ? 'የወር የምግብ እቅድ መሙያ' : 'Renew Monthly Meal Subscription'}
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {isAmharic
+                        ? 'እቅድ ይምረጡ፣ በCBE ወይም Telebirr ይክፈሉ እና ደረሰኝ ያስገቡ'
+                        : 'Choose plan, transfer via CBE/Telebirr, and submit reference proof'}
+                    </p>
+                  </div>
+
+                  {/* Step 1: Choose Plan */}
+                  <div className="space-y-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">
+                      Step 1: Choose Meal Plan
+                    </span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPlan('2meals')}
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          selectedPlan === '2meals'
+                            ? 'border-[#08795d] bg-emerald-50/70 ring-2 ring-emerald-500/20'
+                            : 'border-slate-200 bg-white hover:border-slate-300'
+                        }`}
+                      >
+                        <span className="text-xs font-bold text-slate-900 block">2 Meals / Day</span>
+                        <span className="text-sm font-black text-[#08795d] block mt-0.5">4,500 Birr</span>
+                        <span className="text-[10px] text-slate-500">Lunch & Dinner (30 Days)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPlan('3meals')}
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          selectedPlan === '3meals'
+                            ? 'border-[#08795d] bg-emerald-50/70 ring-2 ring-emerald-500/20'
+                            : 'border-slate-200 bg-white hover:border-slate-300'
+                        }`}
+                      >
+                        <span className="text-xs font-bold text-slate-900 block">3 Meals / Day</span>
+                        <span className="text-sm font-black text-[#08795d] block mt-0.5">6,700 Birr</span>
+                        <span className="text-[10px] text-slate-500">Breakfast, Lunch & Dinner</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Step 2: Transfer Details */}
+                  <div className="space-y-2 pt-2 border-t border-slate-100">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">
+                      Step 2: Transfer to Cafeteria Account
+                    </span>
+                    <div className="grid sm:grid-cols-2 gap-2">
+                      {/* CBE */}
+                      <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase block">CBE Account</span>
+                          <span className="text-xs font-bold text-slate-900 block select-all">1000690418917</span>
+                          <span className="text-[10px] text-slate-500 truncate block">Biniyam Yimen Tilahun</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyAccount('1000690418917', 'cbe')}
+                          className="px-2 py-1 rounded-md text-[10px] font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                        >
+                          {copiedBank === 'cbe' ? 'Copied!' : 'Copy'}
+                        </button>
+                      </div>
+
+                      {/* Telebirr */}
+                      <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase block">Telebirr Phone</span>
+                          <span className="text-xs font-bold text-slate-900 block select-all">0950271983</span>
+                          <span className="text-[10px] text-slate-500 truncate block">Biniam</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyAccount('0950271983', 'telebirr')}
+                          className="px-2 py-1 rounded-md text-[10px] font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                        >
+                          {copiedBank === 'telebirr' ? 'Copied!' : 'Copy'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Rejection Warning if applicable */}
+                  {profile?.payment_rejection_reason && (
+                    <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
+                      <strong>Payment Rejected:</strong> {profile.payment_rejection_reason}
+                    </div>
+                  )}
+
+                  {/* Step 3 & 4: Form Submission */}
+                  <form onSubmit={handlePaymentSubmit} className="space-y-3 pt-2 border-t border-slate-100">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                        Step 3: {t.enterRef}
+                      </label>
+                      <input
+                        className="w-full h-11 px-3 rounded-xl border border-slate-300 text-xs font-medium text-slate-900 bg-[#f5f5f7] focus:outline-none focus:border-[#08795d]"
+                        value={paymentReference}
+                        onChange={(e) => setPaymentReference(e.target.value)}
+                        placeholder="Example: CBE123456789 or Telebirr Txn ID"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                        Step 4: Attach Receipt Screenshot
+                      </label>
+                      {!receiptPreview ? (
+                        <label className="flex flex-col items-center justify-center p-3.5 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/70 hover:bg-slate-100 cursor-pointer transition">
+                          <Upload className="w-5 h-5 text-[#08795d] mb-1" />
+                          <span className="text-xs font-bold text-slate-800">
+                            Upload Telebirr / CBE Screenshot
+                          </span>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleReceiptChange}
+                          />
+                        </label>
+                      ) : (
+                        <div className="rounded-xl border border-slate-200 bg-white p-2.5 flex items-center justify-between gap-3 shadow-xs">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <img
+                              src={receiptPreview}
+                              alt="Receipt"
+                              className="h-10 w-10 object-cover rounded-lg border border-slate-200"
+                            />
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-slate-900 truncate">
+                                {receiptFile?.name || 'screenshot.jpg'}
+                              </p>
+                              <p className="text-[10px] text-emerald-700 font-semibold">
+                                ✓ Ready to verify
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleRemoveReceipt}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isSubmittingPayment}
+                      className="w-full h-12 rounded-xl bg-[#08795d] text-white font-bold text-xs sm:text-sm hover:bg-[#07684f] shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {isSubmittingPayment ? (
+                        <>
+                          <LoaderCircle className="w-4 h-4 animate-spin text-white" />
+                          <span>Submitting payment proof...</span>
+                        </>
+                      ) : (
+                        <span>{t.submit}</span>
+                      )}
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* Language Switcher in Profile */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase font-semibold text-slate-500 tracking-wider">Pickup Station</p>
-                  <p className="text-sm font-bold text-slate-900">
-                    Building {profile?.pickup_point || 'T22 / T34'}
+                  <h4 className="text-sm font-bold text-slate-900">{t.languageSetting || 'Language / ቋንቋ'}</h4>
+                  <p className="text-xs text-slate-500">
+                    {language === 'en' ? 'English is active' : 'አማርኛ ቋንቋ በርቷል'}
                   </p>
                 </div>
+                <LanguageToggle />
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-white shadow-sm border border-slate-200 text-emerald-700">
-                  <Fingerprint className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-xs uppercase font-semibold text-slate-500 tracking-wider">Student ID</p>
-                  <p className="text-sm font-bold text-slate-900">
-                    {profile?.identity_number || 'N/A'}
-                  </p>
-                </div>
+              {/* Account Actions: Refresh & Sign Out */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                  {t.accountActions || 'Account Actions'}
+                </h4>
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 text-slate-700 text-xs font-semibold transition"
+                >
+                  <span className="flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4 text-[#08795d]" />
+                    {t.refresh}
+                  </span>
+                  <span className="text-[10px] text-slate-400">Sync latest</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={signOut}
+                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-rose-50 text-rose-600 text-xs font-semibold transition"
+                >
+                  <span className="flex items-center gap-2">
+                    <LogOut className="w-4 h-4" />
+                    {t.signOut}
+                  </span>
+                  <span className="text-[10px] text-rose-400">Exit account</span>
+                </button>
               </div>
             </div>
-          </div>
-        ) : null}
-
-        {!isSubscriptionActive ? (
-          <section className="panel w-full overflow-hidden p-0">
-            <div className="bg-gradient-to-r from-amber-100 via-white to-emerald-100 px-5 py-6 md:px-6 lg:px-8">
-              <p className="text-sm font-medium uppercase tracking-[0.2em] text-emerald-700">
-                How CampusFood Works
-              </p>
-              <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">
-                Built for fast campus pickup, not cafeteria queues.
-              </h2>
-              <p className="mt-3 max-w-2xl text-sm text-slate-600">
-                Once your monthly plan is approved, ordering opens instantly and your meal is routed
-                to the correct pickup point for the current service window.
-              </p>
-            </div>
-
-            <div className="grid gap-3 bg-slate-50 px-5 py-6 md:grid-cols-3 md:gap-4 md:p-6">
-              <article className="soft-panel border border-amber-100 bg-amber-50/70 p-5">
-                <div className="inline-flex rounded-2xl bg-amber-200 p-3 text-amber-900">
-                  <Clock3 className="h-5 w-5" />
-                </div>
-                <h3 className="mt-4 text-xl font-bold text-slate-950">Strict Meal Windows.</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  We operate on Ethiopian Local Time. Breakfast is 1:00 - 2:00 Local Time, Lunch
-                  is 5:00 - 7:00 Local Time, and Dinner is 11:00 - 1:00 Local Time. Order before
-                  the cutoff!
-                </p>
-              </article>
-
-              <article className="soft-panel border border-sky-100 bg-sky-50/70 p-5">
-                <div className="inline-flex rounded-2xl bg-sky-200 p-3 text-sky-900">
-                  <Truck className="h-5 w-5" />
-                </div>
-                <h3 className="mt-4 text-xl font-bold text-slate-950">Direct Minibus Delivery.</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  All orders are freshly prepared in our city cafeteria and delivered directly to your
-                  campus pickup points at T22 (Female Building) and T34 (Male Building).
-                </p>
-              </article>
-
-              <article className="soft-panel border border-emerald-100 bg-emerald-50/70 p-5">
-                <div className="inline-flex rounded-2xl bg-emerald-200 p-3 text-emerald-900">
-                  <Fingerprint className="h-5 w-5" />
-                </div>
-                <h3 className="mt-4 text-xl font-bold text-slate-950">Your Unique ID.</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Always remember your Permanent Identity Number. You will use this number to quickly
-                  claim your specific meal box from the delivery driver.
-                </p>
-              </article>
-            </div>
-          </section>
-        ) : null}
-
-        {isSubscriptionActive && !existingOrder && !DEV_MODE_ALWAYS_OPEN && mealContext.activeMeal !== focusedMeal ? (
-          <EmptyState
-            title={`${translateMealLabel(t, focusedMeal)} ordering is currently closed.`}
-            description={
-              focusedMeal === 'Breakfast'
-                ? 'Breakfast window is 1:00 - 2:00 Local Time (7:00 - 8:00 AM). Ordering will open automatically during this window.'
-                : focusedMeal === 'Lunch'
-                ? 'Lunch window is 5:00 - 7:00 Local Time (11:00 AM - 1:00 PM). Ordering will open automatically during this window.'
-                : 'Dinner window is 11:00 - 1:00 Local Time (5:00 - 7:00 PM). Ordering will open automatically during this window.'
-            }
-          />
-        ) : null}
-
-        {isSubscriptionActive && !existingOrder && (DEV_MODE_ALWAYS_OPEN || mealContext.activeMeal === focusedMeal) ? (
-          <section className="space-y-4">
-            <div className="px-5 md:px-0">
-              <h2 className="text-2xl font-bold">
-                {formatMenuTitle(t, focusedMeal)}
-              </h2>
-              <p className="mt-1 text-sm text-slate-600">
-                Choose one item for the current active meal window. Once confirmed, your selection will be locked in.
-              </p>
-            </div>
-
-            {loading ? (
-              <div className="panel w-full px-5 py-8 text-center text-sm text-slate-600 md:px-8">
-                Loading meal options...
-              </div>
-            ) : menuItems.length ? (
-              <div className="grid gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3">
-                {menuItems.map((item) => (
-                  <OrderCard
-                    key={item.id}
-                    item={item}
-                    onOrder={handleOrderClick}
-                    loading={submittingId === item.id}
-                    isActiveWindow={true}
-                    disabled={Boolean(existingOrder)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                title="No menu items yet"
-                description={`The manager has not added any ${focusedMeal.toLowerCase()} items yet.`}
-              />
-            )}
-          </section>
-        ) : null}
+          )}
+        </main>
       </div>
 
-      {selectedFood && isSubscriptionActive ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-6">
-          <div className="panel w-full max-w-md p-6">
-            <h3 className="text-2xl font-bold">Confirm order</h3>
-            <p className="mt-3 text-sm text-slate-600">
-              Confirm your order: <strong>{selectedFood.name}</strong> for{' '}
-              <strong>{selectedFood.meal_type}</strong>
+      {/* ======================================================== */}
+      {/* MOBILE FIXED BOTTOM NAVIGATION BAR (md:hidden)           */}
+      {/* ======================================================== */}
+      <nav
+        className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-slate-200/80 shadow-lg px-2 py-1.5 flex items-center justify-around md:hidden pb-[max(8px,env(safe-area-inset-bottom))]"
+        aria-label="Mobile Bottom Navigation"
+      >
+        {/* Home */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('home')}
+          className={`flex flex-col items-center justify-center min-w-[64px] min-h-[44px] transition-colors ${
+            activeTab === 'home' ? 'text-[#08795d]' : 'text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          <Home className={`w-5 h-5 ${activeTab === 'home' ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
+          <span className={`text-[10px] mt-0.5 ${activeTab === 'home' ? 'font-bold' : 'font-medium'}`}>
+            {t.home || 'Home'}
+          </span>
+        </button>
+
+        {/* Favorites */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('favorites')}
+          className={`flex flex-col items-center justify-center min-w-[64px] min-h-[44px] relative transition-colors ${
+            activeTab === 'favorites' ? 'text-[#08795d]' : 'text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          <Heart
+            className={`w-5 h-5 ${
+              activeTab === 'favorites'
+                ? 'stroke-[2.5]'
+                : favorites.length > 0
+                  ? 'text-rose-500 fill-rose-500 stroke-[1.8]'
+                  : 'stroke-[1.8]'
+            }`}
+          />
+          <span className={`text-[10px] mt-0.5 ${activeTab === 'favorites' ? 'font-bold' : 'font-medium'}`}>
+            {t.favorites || 'Favorites'}
+          </span>
+          {favorites.length > 0 && (
+            <span className="absolute top-1 right-3 w-2 h-2 rounded-full bg-rose-500" />
+          )}
+        </button>
+
+        {/* Orders */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('orders')}
+          className={`flex flex-col items-center justify-center min-w-[64px] min-h-[44px] relative transition-colors ${
+            activeTab === 'orders' ? 'text-[#08795d]' : 'text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          <Package className={`w-5 h-5 ${activeTab === 'orders' ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
+          <span className={`text-[10px] mt-0.5 ${activeTab === 'orders' ? 'font-bold' : 'font-medium'}`}>
+            {t.orders || 'Orders'}
+          </span>
+          {existingOrder && (
+            <span className="absolute top-1 right-3 w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
+          )}
+        </button>
+
+        {/* Profile */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('profile')}
+          className={`flex flex-col items-center justify-center min-w-[64px] min-h-[44px] transition-colors ${
+            activeTab === 'profile' ? 'text-[#08795d]' : 'text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          <UserRound className={`w-5 h-5 ${activeTab === 'profile' ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
+          <span className={`text-[10px] mt-0.5 ${activeTab === 'profile' ? 'font-bold' : 'font-medium'}`}>
+            {t.profile || 'Profile'}
+          </span>
+        </button>
+      </nav>
+
+      {/* ======================================================== */}
+      {/* ORDER CONFIRMATION MODAL                                  */}
+      {/* ======================================================== */}
+      {selectedFood && isSubscriptionActive && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 backdrop-blur-xs px-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl border border-slate-100 font-campus animate-fadeIn">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-[#08795d] flex items-center justify-center shrink-0">
+                <UtensilsCrossed className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">
+                  {t.confirmOrder || 'Confirm Order'}
+                </h3>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#08795d]">
+                  {translateMealLabel(t, selectedFood.meal_type)}
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-4 p-3 rounded-xl bg-slate-50 border border-slate-100">
+              <p className="text-sm font-bold text-slate-900">{selectedFood.name}</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                {isAmharic
+                  ? `የመቀበያ ቦታዎ፡ ህንፃ ${profile?.pickup_point || 'T22'}`
+                  : `Delivering to Station: Building ${profile?.pickup_point || 'T22'}`}
+              </p>
+            </div>
+
+            <p className="mt-3 text-xs text-slate-500 leading-relaxed">
+              {isAmharic
+                ? 'አንዴ ካረጋገጡ በኋላ ለዚህ የምግብ ሰዓት ሌላ ማዘዝ አይቻልም።'
+                : 'Confirming locks your selection for this active meal window. Each student is allowed 1 meal portion.'}
             </p>
-            <div className="mt-6 flex gap-3">
+
+            <div className="mt-5 flex items-center gap-2.5">
               <button
                 type="button"
-                className="btn-secondary flex-1"
+                className="flex-1 h-11 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 transition"
                 onClick={() => setSelectedFood(null)}
                 disabled={submittingId === selectedFood.id}
               >
-                Cancel
+                {t.cancel || 'Cancel'}
               </button>
               <button
                 type="button"
-                className="btn-primary flex-1"
+                className="flex-1 h-11 rounded-xl bg-[#08795d] text-white text-xs font-bold hover:bg-[#07684f] shadow-sm transition disabled:opacity-50"
                 onClick={handleConfirmOrder}
                 disabled={submittingId === selectedFood.id}
               >
-                {submittingId === selectedFood.id ? 'Submitting...' : 'Confirm Order'}
+                {submittingId === selectedFood.id ? 'Submitting...' : t.confirmOrder || 'Confirm Order'}
               </button>
             </div>
           </div>
         </div>
-      ) : null}
+      )}
 
-      {arrivalNotice ? (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/70 px-6">
-          <div className="panel w-full max-w-lg p-6 sm:p-8">
-            <div className="flex items-start gap-4">
-              <div className="rounded-3xl bg-emerald-100 p-4">
-                <BellRing className="h-7 w-7 text-emerald-800" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">
-                  Food Is Here!
-                </p>
-                <h2 className="mt-2 text-3xl font-extrabold tracking-tight">
-                  Your meal is ready for pickup.
-                </h2>
-                <p className="mt-3 text-base leading-7 text-slate-600">
-                  Your food has arrived! Please head outside to the{' '}
-                  <strong>{arrivalNotice.pickupPoint}</strong> Minibus to pick up your{' '}
-                  <strong>{arrivalNotice.foodName}</strong>.
-                </p>
-              </div>
+      {/* ======================================================== */}
+      {/* ARRIVAL NOTIFICATION MODAL (Preserved with sound chime)   */}
+      {/* ======================================================== */}
+      {arrivalNotice && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/70 backdrop-blur-xs px-4">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl font-campus text-center animate-fadeIn border border-emerald-200">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-[#08795d] flex items-center justify-center mx-auto mb-3 shadow-sm">
+              <BellRing className="w-7 h-7 text-[#08795d]" />
             </div>
+
+            <span className="text-xs font-bold uppercase tracking-widest text-[#08795d]">
+              {isAmharic ? 'ምግብዎ ደርሷል!' : 'Food Is Here!'}
+            </span>
+
+            <h2 className="text-xl font-extrabold text-slate-900 mt-1">
+              {isAmharic ? 'ምግብዎ ለመቀበል ዝግጁ ነው' : 'Your meal is ready for pickup'}
+            </h2>
+
+            <p className="mt-2 text-xs text-slate-600 leading-relaxed">
+              {isAmharic ? (
+                <>
+                  እባክዎ የተማሪ መታወቂያዎን ይዘው ወደ{' '}
+                  <strong>ህንፃ {arrivalNotice.pickupPoint}</strong> ሚኒባስ በመሄድ{' '}
+                  <strong>{arrivalNotice.foodName}</strong> ይረከቡ።
+                </>
+              ) : (
+                <>
+                  Your food has arrived! Please head outside to the{' '}
+                  <strong>Building {arrivalNotice.pickupPoint}</strong> Minibus with your Student ID
+                  to collect your <strong>{arrivalNotice.foodName}</strong>.
+                </>
+              )}
+            </p>
 
             <button
               type="button"
-              className="btn-primary mt-8 w-full"
+              className="mt-6 w-full h-11 rounded-xl bg-[#08795d] text-white text-xs font-bold hover:bg-[#07684f] shadow-md transition"
               onClick={handleDismissArrivalNotice}
             >
-              Got it!
+              {isAmharic ? 'ተረድቻለሁ!' : 'Got it!'}
             </button>
           </div>
         </div>
-      ) : null}
+      )}
 
-      {toastMessage ? (
-        <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[70] flex justify-center px-4">
-          <div className="max-w-md rounded-2xl bg-slate-800 px-5 py-3 text-center text-sm font-medium text-white shadow-xl">
+      {/* ======================================================== */}
+      {/* FLOATING TOAST NOTIFICATION                             */}
+      {/* ======================================================== */}
+      {toastMessage && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-20 md:bottom-8 z-[70] flex justify-center px-4">
+          <div className="max-w-md rounded-2xl bg-slate-900/90 backdrop-blur px-4 py-2.5 text-center text-xs font-semibold text-white shadow-xl animate-fadeIn">
             {toastMessage}
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
