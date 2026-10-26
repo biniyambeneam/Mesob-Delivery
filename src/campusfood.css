@@ -1,0 +1,211 @@
+/* CampusFood Design System Styles & Tokens */
+:root {
+  --cf-brand-primary: #08795d;
+  --cf-brand-accent: #d48431;
+  --cf-text-primary: #101426;
+  --cf-text-base: #171719;
+  --cf-text-secondary: #777777;
+  --cf-text-muted: #596571;
+  --cf-surface-cream: #f7f6ea;
+  --cf-surface-pickup: #edf6ee;
+  --cf-surface-input: #f5f5f7;
+  --cf-border-input: #d3d3d6;
+  --cf-border-soft: #dce3e8;
+  --cf-success: #35b96a;
+}
+
+/* Base font stack prioritizing Poppins */
+.font-campus {
+  font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Mobile device shell (centered on wide screens) */
+.cf-phone-shell {
+  width: 100%;
+  max-width: 576px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background-color: #ffffff;
+  overflow-x: hidden;
+}
+
+@media (min-width: 577px) {
+  .cf-shell-wrapper {
+    background-color: #f2f2f4;
+    min-height: 100vh;
+    padding: 24px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .cf-phone-shell {
+    min-height: min(890px, 94vh);
+    border-radius: 36px;
+    box-shadow: 0 0 0 1px #e7e7e9, 0 20px 60px rgba(22, 17, 27, 0.12);
+    overflow: hidden;
+  }
+}
+
+/* Onboarding circular artwork disks */
+.cf-art-disk {
+  position: relative;
+  width: min(62vw, 320px);
+  height: min(62vw, 320px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  transition: background-color 0.3s ease;
+}
+
+.cf-inner-disk {
+  width: 66%;
+  height: 66%;
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset -6px -8px 16px rgba(0, 0, 0, 0.08), 0 10px 20px rgba(0, 0, 0, 0.06);
+}
+
+/* Feature cards */
+.cf-feature-card {
+  position: absolute;
+  background: #ffffff;
+  border-radius: 15px;
+  padding: 9px 12px;
+  box-shadow: 0 8px 24px rgba(42, 39, 48, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 5;
+  max-width: 178px;
+  min-width: 140px;
+  pointer-events: none;
+  animation: cf-float 3s ease-in-out infinite;
+}
+
+.cf-feature-card.top-right {
+  top: 6%;
+  right: -4px;
+}
+
+.cf-feature-card.bottom-left {
+  bottom: 8%;
+  left: -4px;
+  animation-delay: 1.5s;
+}
+
+@keyframes cf-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* Floating tiles */
+.cf-tile {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 10px 22px rgba(56, 41, 47, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4;
+}
+
+/* Pagination dots */
+.cf-dot {
+  height: 8px;
+  border-radius: 12px;
+  transition: all 0.25s ease;
+}
+
+.cf-dot.active {
+  width: 26px;
+  background-color: var(--cf-brand-primary);
+}
+
+.cf-dot.inactive {
+  width: 8px;
+  background-color: #d8d8da;
+}
+
+/* Primary and secondary button styling */
+.cf-primary-btn {
+  height: 58px;
+  border-radius: 17px;
+  background-color: var(--cf-brand-primary);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 17px;
+  box-shadow: 0 8px 18px rgba(8, 121, 93, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+  border: none;
+  cursor: pointer;
+}
+
+.cf-primary-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(8, 121, 93, 0.3);
+}
+
+.cf-primary-btn:disabled {
+  opacity: 0.44;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.cf-secondary-btn {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--cf-text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.cf-secondary-btn:hover {
+  color: var(--cf-text-primary);
+}
+
+/* Form inputs */
+.cf-input-field {
+  height: 60px;
+  background-color: var(--cf-surface-input);
+  border: 1px solid var(--cf-border-input);
+  border-radius: 13px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cf-input-field:focus-within {
+  border-color: var(--cf-brand-primary);
+  box-shadow: 0 0 0 3px rgba(8, 121, 93, 0.15);
+}
+
+/* Compact screens override */
+@media (max-height: 720px) {
+  .cf-feature-card {
+    transform: scale(0.85);
+  }
+  .cf-art-disk {
+    width: 250px;
+    height: 250px;
+  }
+}
