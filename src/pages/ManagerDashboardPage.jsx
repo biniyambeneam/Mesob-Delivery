@@ -604,20 +604,32 @@ export default function ManagerDashboardPage() {
             </div>
 
             {/* Right: Quick Action Buttons & Status */}
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => loadDashboard(false)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-xs transition"
-                title="Refresh dashboard data"
+                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-xs transition"
+                title={t.refresh || 'Refresh'}
               >
                 <RefreshCw className={`w-3.5 h-3.5 text-[#08795d] ${loading ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">{t.refresh}</span>
+                <span className="hidden sm:inline">{t.refresh || 'Refresh'}</span>
               </button>
 
               <div className="md:hidden">
                 <LanguageToggle />
               </div>
+
+              {/* Mobile Logout Button (Visible on mobile/tablet viewports where sidebar is hidden) */}
+              <button
+                type="button"
+                onClick={signOut}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-rose-200 bg-rose-50/80 hover:bg-rose-100 text-xs font-semibold text-rose-600 shadow-xs transition md:hidden"
+                title={t.signOut || 'Sign out'}
+                aria-label={t.signOut || 'Sign out'}
+              >
+                <LogOut className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                <span className="hidden sm:inline">{t.signOut || 'Sign out'}</span>
+              </button>
             </div>
           </div>
         </header>
@@ -1340,6 +1352,28 @@ export default function ManagerDashboardPage() {
               </div>
             </div>
           )}
+
+          {/* Mobile Profile & Sign Out Footer Card */}
+          <div className="md:hidden mt-6 p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 rounded-full bg-emerald-700 text-white font-bold flex items-center justify-center shrink-0 text-xs">
+                {profile?.name ? profile.name.charAt(0).toUpperCase() : 'M'}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-slate-900 truncate">{profile?.name || 'Manager'}</p>
+                <p className="text-[10px] text-slate-500 truncate">Kitchen Operations</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={signOut}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors border border-rose-200 shrink-0"
+              title={t.signOut || 'Sign out'}
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>{t.signOut || 'Sign out'}</span>
+            </button>
+          </div>
         </main>
       </div>
 
