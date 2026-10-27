@@ -396,7 +396,6 @@ export default function StudentDashboardPage() {
         if (insertError.code === '23505') {
           await loadDashboard();
           setToastMessage(`You already placed your ${item.meal_type.toLowerCase()} order.`);
-          setActiveTab('orders');
           return;
         }
 
@@ -425,8 +424,6 @@ export default function StudentDashboardPage() {
       setExistingOrder(confirmedOrder);
       setToastMessage(`${item.meal_type} order confirmed!`);
       await loadDashboard();
-      // Automatically switch to orders tracking tab
-      setActiveTab('orders');
     } catch (submitError) {
       setError(submitError.message || 'Unable to submit order.');
     } finally {
@@ -1138,93 +1135,127 @@ export default function StudentDashboardPage() {
               {/* Meal Status Banner (Consolidated, no nested cards) */}
               <MealStatusCard mealContext={mealContext} pickupPoint={profile?.pickup_point} />
 
-              {/* If Order Already Placed Today: Quick Locked Banner with Link to Orders */}
-              {isSubscriptionActive && existingOrder && (
-                <div className="rounded-2xl border border-emerald-300 bg-gradient-to-r from-emerald-50 via-white to-emerald-50 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-[#08795d] shrink-0">
-                      <CheckCircle2 className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-[#08795d] uppercase tracking-wider">
-                          {translateMealLabel(t, focusedMeal)} {t.orderLocked || 'Order Locked'}
-                        </span>
-                        <span className="text-[10px] text-slate-500 font-medium">
-                          ({t.oneMealPerWindow || '1 meal per window'})
-                        </span>
+              {/* ============================================================ */}
+              {/* COMPACT ORDER CONFIRMATION CARD (Replaces menu when ordered) */}
+              {/* ============================================================ */}
+              {isSubscriptionActive && existingOrder ? (
+                <div className="rounded-2xl border border-emerald-200/90 bg-white p-5 sm:p-6 shadow-xs relative overflow-hidden transition-all">
+                  {/* Subtle decorative background gradient accent */}
+                  <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-emerald-100/40 via-emerald-50/20 to-transparent rounded-full -mr-16 -mt-16 pointer-events-none" />
+
+                  <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+                    {/* Left: Icon, Confirmation Status, Dish Name, and Station */}
+                    <div className="flex items-start gap-3.5 sm:gap-4 min-w-0">
+                      {/* Premium Badge Icon */}
+                      <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-emerald-50 border border-emerald-200/80 text-[#08795d] flex items-center justify-center shrink-0 shadow-2xs">
+                        <CheckCircle2 className="w-6 h-6 stroke-[2.2]" />
                       </div>
-                      <p className="text-sm font-extrabold text-slate-900 mt-0.5">
-                        {existingOrder.menu?.name || 'Your selected dish'}
+
+                      <div className="min-w-0 space-y-1">
+                        {/* Status Badge & Meal Window Indicator */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-[#08795d]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#08795d] animate-pulse" />
+                            {t.orderConfirmed || (isAmharic ? 'ትዕዛዝ ተረጋግጧል' : 'Order Confirmed')}
+                          </span>
+                          <span className="text-[11px] font-semibold text-slate-400">
+                            • {translateMealLabel(t, focusedMeal)}
+                          </span>
+                        </div>
+
+                        {/* Actual Ordered Food Name */}
+                        <h3 className="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight leading-snug truncate">
+                          {existingOrder.menu?.name || (isAmharic ? 'የተመረጠ ምግብ' : 'Selected Dish')}
+                        </h3>
+
+                        {/* Existing Pickup Station Information when available */}
+                        <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
+                          <MapPin className="w-3.5 h-3.5 text-[#08795d] shrink-0" />
+                          <span>
+                            {t.assignedPickupStation || (isAmharic ? 'የመቀበያ ቦታ:' : 'Pickup Station:')}{' '}
+                            <span className="font-bold text-slate-900">
+                              Building {profile?.pickup_point || 'T22'}
+                            </span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right: Existing Track Your Order Button */}
+                    <div className="shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 flex sm:block justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('orders')}
+                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#08795d] hover:bg-[#07684f] text-white text-xs sm:text-sm font-bold transition-all shadow-xs hover:shadow-sm cursor-pointer group"
+                      >
+                        <span>{t.trackYourOrder || (isAmharic ? 'የትዕዛዝ ሁኔታ እይ' : 'Track Your Order')}</span>
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* ============================================================ */
+                /* FOOD MENU & ORDERING (Active before student places an order)  */
+                /* ============================================================ */
+                <>
+                  {/* Menu Section Heading */}
+                  <div className="flex items-center justify-between pt-1">
+                    <div>
+                      <h2 className="text-lg sm:text-xl font-extrabold text-[#101426] tracking-tight">
+                        {formatMenuTitle(t, focusedMeal)}
+                      </h2>
+                      <p className="text-xs text-slate-500 font-normal">
+                        {isAmharic
+                          ? 'ለአሁኑ የምግብ ሰዓት ከተዘጋጁት ምግቦች አንዱን ይምረጡ'
+                          : 'Choose your single dish for the current meal window'}
                       </p>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('orders')}
-                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#08795d] text-white text-xs font-bold hover:bg-[#07684f] transition-all shadow-xs"
-                  >
-                    <span>{isAmharic ? 'የጉዞ ሁኔታ እይ' : 'Track Delivery'}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
 
-              {/* Menu Section Heading */}
-              <div className="flex items-center justify-between pt-1">
-                <div>
-                  <h2 className="text-lg sm:text-xl font-extrabold text-[#101426] tracking-tight">
-                    {formatMenuTitle(t, focusedMeal)}
-                  </h2>
-                  <p className="text-xs text-slate-500 font-normal">
-                    {isAmharic
-                      ? 'ለአሁኑ የምግብ ሰዓት ከተዘጋጁት ምግቦች አንዱን ይምረጡ'
-                      : 'Choose your single dish for the current meal window'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Menu Grid / Empty States */}
-              {loading ? (
-                <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
-                  <LoaderCircle className="w-6 h-6 animate-spin text-[#08795d] mx-auto mb-2" />
-                  <span>Loading meal options...</span>
-                </div>
-              ) : isSubscriptionActive && !existingOrder && !DEV_MODE_ALWAYS_OPEN && mealContext.activeMeal !== focusedMeal ? (
-                <EmptyState
-                  title={`${translateMealLabel(t, focusedMeal)} ordering is currently closed.`}
-                  description={
-                    focusedMeal === 'Breakfast'
-                      ? 'Breakfast window is 1:00 - 2:00 Local Time (7:00 - 8:00 AM).'
-                      : focusedMeal === 'Lunch'
-                        ? 'Lunch window is 5:00 - 7:00 Local Time (11:00 AM - 1:00 PM).'
-                        : 'Dinner window is 11:00 - 1:00 Local Time (5:00 - 7:00 PM).'
-                  }
-                />
-              ) : menuItems.length > 0 ? (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {menuItems.map((item) => (
-                    <OrderCard
-                      key={item.id}
-                      item={item}
-                      onOrder={handleOrderClick}
-                      loading={submittingId === item.id}
-                      isActiveWindow={true}
-                      disabled={Boolean(existingOrder)}
-                      isFavorite={favorites.includes(item.id)}
-                      onToggleFavorite={toggleFavorite}
+                  {/* Menu Grid / Empty States */}
+                  {loading ? (
+                    <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+                      <LoaderCircle className="w-6 h-6 animate-spin text-[#08795d] mx-auto mb-2" />
+                      <span>Loading meal options...</span>
+                    </div>
+                  ) : isSubscriptionActive && !DEV_MODE_ALWAYS_OPEN && mealContext.activeMeal !== focusedMeal ? (
+                    <EmptyState
+                      title={`${translateMealLabel(t, focusedMeal)} ordering is currently closed.`}
+                      description={
+                        focusedMeal === 'Breakfast'
+                          ? 'Breakfast window is 1:00 - 2:00 Local Time (7:00 - 8:00 AM).'
+                          : focusedMeal === 'Lunch'
+                            ? 'Lunch window is 5:00 - 7:00 Local Time (11:00 AM - 1:00 PM).'
+                            : 'Dinner window is 11:00 - 1:00 Local Time (5:00 - 7:00 PM).'
+                      }
                     />
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  title={isAmharic ? 'ምንም ሜኑ አልተጨመረም' : 'No menu items yet'}
-                  description={
-                    isAmharic
-                      ? 'ማኔጀሩ ለአሁኑ ሰዓት ምግብ እስካሁን አላስገባም።'
-                      : `The cafeteria manager has not added any ${focusedMeal.toLowerCase()} items yet.`
-                  }
-                />
+                  ) : menuItems.length > 0 ? (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {menuItems.map((item) => (
+                        <OrderCard
+                          key={item.id}
+                          item={item}
+                          onOrder={handleOrderClick}
+                          loading={submittingId === item.id}
+                          isActiveWindow={true}
+                          disabled={Boolean(existingOrder)}
+                          isFavorite={favorites.includes(item.id)}
+                          onToggleFavorite={toggleFavorite}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyState
+                      title={isAmharic ? 'ምንም ሜኑ አልተጨመረም' : 'No menu items yet'}
+                      description={
+                        isAmharic
+                          ? 'ማኔጀሩ ለአሁኑ ሰዓት ምግብ እስካሁን አላስገባም።'
+                          : `The cafeteria manager has not added any ${focusedMeal.toLowerCase()} items yet.`
+                      }
+                    />
+                  )}
+                </>
               )}
             </div>
           )}
