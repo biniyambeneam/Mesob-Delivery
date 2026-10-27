@@ -220,32 +220,41 @@ export function AuthProvider({ children }) {
   }, [loadProfile, session?.user]);
 
   const signOut = useCallback(async () => {
-    const resetClientState = () => {
-      setSession(null);
-      setProfile(null);
-      setIsProfileLoading(false);
-      setLoading(false);
-    };
+    // 1. Immediately reset client state so React Router redirects without waiting
+    setSession(null);
+    setProfile(null);
+    setIsProfileLoading(false);
+    setLoading(false);
 
-    const clearSupabaseStorage = () => {
-      const localStorageKeys = Object.keys(window.localStorage);
-      localStorageKeys.forEach((key) => {
-        if (key.startsWith('sb-')) {
-          window.localStorage.removeItem(key);
-        }
-      });
-    };
-
+    // 2. Clear Supabase auth keys from localStorage safely (with try/catch for iframe security)
     try {
-      if (supabase) {
-        await supabase.auth.signOut();
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const localStorageKeys = Object.keys(window.localStorage);
+        localStorageKeys.forEach((key) => {
+          if (key.startsWith('sb-') || key.includes('supabase') || key.startsWith('cf_')) {
+            window.localStorage.removeItem(key);
+          }
+        });
       }
-    } catch {
-      window.localStorage.clear();
+    } catch (storageError) {
+      console.warn('Unable to clear localStorage during sign out:', storageError);
+    }
+
+    // 3. Inform Supabase with local scope and timeout to prevent hanging on network locks
+    try {
+      if (supabase?.auth) {
+        await Promise.race([
+          supabase.auth.signOut({ scope: 'local' }),
+          new Promise((resolve) => setTimeout(resolve, 600)),
+        ]);
+      }
+    } catch (authError) {
+      console.warn('Supabase sign out error:', authError);
     } finally {
-      clearSupabaseStorage();
-      resetClientState();
-      window.location.replace('/auth');
+      // 4. Force browser navigation to /auth if not already on /auth
+      if (typeof window !== 'undefined' && window.location.pathname !== '/auth') {
+        window.location.replace('/auth');
+      }
     }
   }, []);
 

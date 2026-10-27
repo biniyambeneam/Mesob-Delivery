@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { addDays } from 'date-fns';
 import {
   AlertCircle,
@@ -59,9 +60,24 @@ const PICKUP_LABELS = {
 };
 
 export default function ManagerDashboardPage() {
+  const navigate = useNavigate();
   const { profile, signOut } = useAuth();
   const { t, language } = useLanguage();
   const isAmharic = language === 'am';
+
+  const handleSignOut = useCallback(async (event) => {
+    if (event?.preventDefault) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    try {
+      await signOut();
+    } catch (signOutError) {
+      console.warn('Sign out warning:', signOutError);
+    } finally {
+      navigate('/auth', { replace: true });
+    }
+  }, [signOut, navigate]);
 
   const [mealContext, setMealContext] = useState(() => getMealWindowState());
   const [activeTab, setActiveTab] = useState('kitchen');
@@ -486,7 +502,7 @@ export default function ManagerDashboardPage() {
       {/* ======================================================== */}
       {/* DESKTOP SIDEBAR NAVIGATION (Hidden on mobile, md:flex)   */}
       {/* ======================================================== */}
-      <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:bg-white md:border-r md:border-slate-200/80 md:z-30 p-5 shadow-xs">
+      <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:top-0 md:bottom-0 md:left-0 md:bg-white md:border-r md:border-slate-200/80 md:z-30 p-5 shadow-xs overflow-y-auto">
         {/* Brand Wordmark & Role Pill */}
         <div className="px-2 py-2 mb-6">
           <div className="flex items-center gap-1.5">
@@ -512,7 +528,7 @@ export default function ManagerDashboardPage() {
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${
                   isActive
                     ? 'bg-emerald-50 text-[#08795d] border-l-4 border-[#08795d]'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -570,8 +586,9 @@ export default function ManagerDashboardPage() {
 
           <button
             type="button"
-            onClick={signOut}
-            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+            onClick={handleSignOut}
+            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+            title={t.signOut || 'Sign out'}
           >
             <LogOut className="w-4 h-4" />
             <span>{t.signOut}</span>
@@ -622,8 +639,8 @@ export default function ManagerDashboardPage() {
               {/* Mobile Logout Button (Visible on mobile/tablet viewports where sidebar is hidden) */}
               <button
                 type="button"
-                onClick={signOut}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-rose-200 bg-rose-50/80 hover:bg-rose-100 text-xs font-semibold text-rose-600 shadow-xs transition md:hidden"
+                onClick={handleSignOut}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-rose-200 bg-rose-50/80 hover:bg-rose-100 text-xs font-semibold text-rose-600 shadow-xs transition md:hidden cursor-pointer"
                 title={t.signOut || 'Sign out'}
                 aria-label={t.signOut || 'Sign out'}
               >
@@ -1366,8 +1383,8 @@ export default function ManagerDashboardPage() {
             </div>
             <button
               type="button"
-              onClick={signOut}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors border border-rose-200 shrink-0"
+              onClick={handleSignOut}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors border border-rose-200 shrink-0 cursor-pointer"
               title={t.signOut || 'Sign out'}
             >
               <LogOut className="w-3.5 h-3.5" />
