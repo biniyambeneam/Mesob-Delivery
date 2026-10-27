@@ -12,6 +12,7 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const ensureProfileRow = useCallback(async (user) => {
     if (!supabase || !user?.id) {
@@ -220,18 +221,34 @@ export function AuthProvider({ children }) {
   }, [loadProfile, session?.user]);
 
   const signOut = useCallback(async () => {
+    if (isLoggingOut) {
+      return;
+    }
+    setIsLoggingOut(true);
+
     // 1. Immediately reset client state so React Router redirects without waiting
     setSession(null);
     setProfile(null);
     setIsProfileLoading(false);
     setLoading(false);
 
-    // 2. Clear Supabase auth keys from localStorage safely (with try/catch for iframe security)
+    // 2. Clear Supabase auth keys and session cache safely from localStorage
+    // CRITICAL: Explicitly preserve student favorites (cf_favorites_*) across logout
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         const localStorageKeys = Object.keys(window.localStorage);
         localStorageKeys.forEach((key) => {
-          if (key.startsWith('sb-') || key.includes('supabase') || key.startsWith('cf_')) {
+          // Explicitly preserve student favorites
+          if (key.startsWith('cf_favorites_')) {
+            return;
+          }
+          // Remove Supabase auth tokens and cached session items
+          if (
+            key.startsWith('sb-') ||
+            key.includes('supabase') ||
+            key.startsWith('cf_order_') ||
+            key.startsWith('cf_session_')
+          ) {
             window.localStorage.removeItem(key);
           }
         });
@@ -243,26 +260,31 @@ export function AuthProvider({ children }) {
     // 3. Inform Supabase with local scope and timeout to prevent hanging on network locks
     try {
       if (supabase?.auth) {
-        await Promise.race([
+        const { error } = await Promise.race([
           supabase.auth.signOut({ scope: 'local' }),
-          new Promise((resolve) => setTimeout(resolve, 600)),
+          new Promise((resolve) => setTimeout(() => resolve({ error: null }), 800)),
         ]);
+        if (error) {
+          console.warn('Supabase auth sign out warning:', error.message || error);
+        }
       }
     } catch (authError) {
       console.warn('Supabase sign out error:', authError);
     } finally {
-      // 4. Force browser navigation to /auth if not already on /auth
+      setIsLoggingOut(false);
+      // 4. Force browser navigation to /auth if React Router transition hasn't already switched route
       if (typeof window !== 'undefined' && window.location.pathname !== '/auth') {
         window.location.replace('/auth');
       }
     }
-  }, []);
+  }, [isLoggingOut]);
 
   const value = {
     session,
     profile,
     loading,
     isProfileLoading,
+    isLoggingOut,
     isManager: Boolean(profile?.is_manager),
     isSupabaseConfigured,
     signUp,

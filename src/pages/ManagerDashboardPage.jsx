@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { addDays } from 'date-fns';
 import {
   AlertCircle,
@@ -60,8 +59,7 @@ const PICKUP_LABELS = {
 };
 
 export default function ManagerDashboardPage() {
-  const navigate = useNavigate();
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, isLoggingOut } = useAuth();
   const { t, language } = useLanguage();
   const isAmharic = language === 'am';
 
@@ -74,10 +72,8 @@ export default function ManagerDashboardPage() {
       await signOut();
     } catch (signOutError) {
       console.warn('Sign out warning:', signOutError);
-    } finally {
-      navigate('/auth', { replace: true });
     }
-  }, [signOut, navigate]);
+  }, [signOut]);
 
   const [mealContext, setMealContext] = useState(() => getMealWindowState());
   const [activeTab, setActiveTab] = useState('kitchen');
@@ -587,8 +583,10 @@ export default function ManagerDashboardPage() {
           <button
             type="button"
             onClick={handleSignOut}
-            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+            disabled={isLoggingOut}
+            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
             title={t.signOut || 'Sign out'}
+            aria-label={t.signOut || 'Sign out'}
           >
             <LogOut className="w-4 h-4" />
             <span>{t.signOut}</span>
@@ -602,50 +600,57 @@ export default function ManagerDashboardPage() {
       <div className="md:pl-64 flex flex-col min-h-screen">
         {/* COMPACT TOP HEADER */}
         <header className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-slate-200/70 px-4 py-3 sm:px-6">
-          <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
-            {/* Left: Mobile Wordmark & Operations Greeting */}
-            <div>
-              <div className="flex items-center gap-1.5 md:hidden mb-0.5">
-                <span className="text-lg font-extrabold text-[#08795d] tracking-tight">Campus</span>
-                <span className="text-lg font-extrabold text-[#d48431] tracking-tight">Food</span>
-                <span className="text-[10px] font-bold uppercase text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded ml-1">
+          <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
+            {/* Left: Reorganized 2-line identity and greeting layout */}
+            <div className="min-w-0 flex-1">
+              {/* Line 1: Main Dashboard Heading */}
+              <div className="flex items-center gap-2">
+                <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight truncate">
+                  {t.managerDash || 'Cafeteria Manager'}
+                </h1>
+                <span className="text-[10px] font-bold uppercase text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded shrink-0 md:hidden">
                   Ops
                 </span>
-              </div>
-              <h1 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-                <span>{t.managerDash || 'Cafeteria Manager'}</span>
                 {profile?.name && (
                   <span className="text-slate-400 font-normal hidden sm:inline">• {profile.name}</span>
                 )}
-              </h1>
+              </div>
+
+              {/* Line 2: Manager name and greeting placed neatly underneath the heading */}
+              <p className="text-xs text-slate-500 font-medium truncate mt-0.5 flex items-center gap-1">
+                <span>{t.hello}</span>
+                <span className="text-[#08795d] font-semibold">{profile?.name || 'Manager'}</span>
+                <span>👋</span>
+              </p>
             </div>
 
-            {/* Right: Quick Action Buttons & Status */}
-            <div className="flex items-center gap-2">
+            {/* Right: Quick Action Buttons & Top-Right Mobile Logout */}
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => loadDashboard(false)}
-                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-xs transition"
+                className="inline-flex items-center justify-center p-2 sm:px-3 sm:py-1.5 min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-xs transition cursor-pointer"
                 title={t.refresh || 'Refresh'}
+                aria-label={t.refresh || 'Refresh'}
               >
                 <RefreshCw className={`w-3.5 h-3.5 text-[#08795d] ${loading ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">{t.refresh || 'Refresh'}</span>
+                <span className="hidden sm:inline ml-1.5">{t.refresh || 'Refresh'}</span>
               </button>
 
               <div className="md:hidden">
                 <LanguageToggle />
               </div>
 
-              {/* Mobile Logout Button (Visible on mobile/tablet viewports where sidebar is hidden) */}
+              {/* Mobile Top-Right Corner Icon-Only Logout Button */}
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-rose-200 bg-rose-50/80 hover:bg-rose-100 text-xs font-semibold text-rose-600 shadow-xs transition md:hidden cursor-pointer"
-                title={t.signOut || 'Sign out'}
-                aria-label={t.signOut || 'Sign out'}
+                disabled={isLoggingOut}
+                className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50/80 hover:bg-rose-100 text-rose-600 shadow-xs transition md:hidden cursor-pointer disabled:opacity-50 shrink-0"
+                title={t.signOut || 'Log out'}
+                aria-label="Log out"
               >
-                <LogOut className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                <span className="hidden sm:inline">{t.signOut || 'Sign out'}</span>
+                <LogOut className="w-4 h-4 text-rose-600 shrink-0" />
               </button>
             </div>
           </div>
@@ -1370,26 +1375,15 @@ export default function ManagerDashboardPage() {
             </div>
           )}
 
-          {/* Mobile Profile & Sign Out Footer Card */}
-          <div className="md:hidden mt-6 p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-full bg-emerald-700 text-white font-bold flex items-center justify-center shrink-0 text-xs">
-                {profile?.name ? profile.name.charAt(0).toUpperCase() : 'M'}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-slate-900 truncate">{profile?.name || 'Manager'}</p>
-                <p className="text-[10px] text-slate-500 truncate">Kitchen Operations</p>
-              </div>
+          {/* Mobile Profile Card (Redundant logout button removed; manager identity retained) */}
+          <div className="md:hidden mt-6 p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-emerald-700 text-white font-bold flex items-center justify-center shrink-0 text-xs">
+              {profile?.name ? profile.name.charAt(0).toUpperCase() : 'M'}
             </div>
-            <button
-              type="button"
-              onClick={handleSignOut}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors border border-rose-200 shrink-0 cursor-pointer"
-              title={t.signOut || 'Sign out'}
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>{t.signOut || 'Sign out'}</span>
-            </button>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold text-slate-900 truncate">{profile?.name || 'Manager'}</p>
+              <p className="text-[10px] text-slate-500 truncate">Kitchen Operations</p>
+            </div>
           </div>
         </main>
       </div>

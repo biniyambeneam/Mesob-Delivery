@@ -94,7 +94,7 @@ async function compressReceiptImage(file, maxWidth = 1200, quality = 0.8) {
 }
 
 export default function StudentDashboardPage() {
-  const { profile, refreshProfile, signOut } = useAuth();
+  const { profile, refreshProfile, signOut, isLoggingOut } = useAuth();
   const { t, language } = useLanguage();
   const isAmharic = language === 'am';
 
@@ -1043,7 +1043,10 @@ export default function StudentDashboardPage() {
           <button
             type="button"
             onClick={signOut}
-            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+            disabled={isLoggingOut}
+            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+            title={t.signOut || 'Log out'}
+            aria-label={t.signOut || 'Log out'}
           >
             <LogOut className="w-4 h-4" />
             <span>{t.signOut}</span>
@@ -1071,19 +1074,41 @@ export default function StudentDashboardPage() {
               </h1>
             </div>
 
-            {/* Right: Station Badge & Order Quick Pill */}
+            {/* Right: Station Badge & Mobile Logout Control */}
             <div className="flex items-center gap-2.5">
-              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#08795d] bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60">
-                <MapPin className="w-3 h-3 text-[#08795d]" />
-                <span>Station: {profile?.pickup_point || 'T22'}</span>
-              </span>
-
-              {isSubscriptionActive && (
-                <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">
-                  <CreditCard className="w-3 h-3 text-slate-500" />
-                  <span>{daysRemaining} {t.remaining}</span>
+              {/* Mobile: Station & Logout Control stacked cleanly (logout placed immediately above station) */}
+              <div className="flex flex-col items-end gap-1 md:hidden">
+                <button
+                  type="button"
+                  onClick={signOut}
+                  disabled={isLoggingOut}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-rose-600 bg-rose-50/90 hover:bg-rose-100 rounded-lg border border-rose-200/80 transition-colors shadow-2xs cursor-pointer min-h-[32px] disabled:opacity-50"
+                  aria-label={t.signOut || 'Log out'}
+                  title={t.signOut || 'Log out'}
+                >
+                  <LogOut className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                  <span>{t.signOut || 'Log out'}</span>
+                </button>
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#08795d] bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/60">
+                  <MapPin className="w-3 h-3 text-[#08795d]" />
+                  <span>Station: {profile?.pickup_point || 'T22'}</span>
                 </span>
-              )}
+              </div>
+
+              {/* Desktop: Station Badge & Remaining Days Pill */}
+              <div className="hidden md:flex items-center gap-2.5">
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#08795d] bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60">
+                  <MapPin className="w-3 h-3 text-[#08795d]" />
+                  <span>Station: {profile?.pickup_point || 'T22'}</span>
+                </span>
+
+                {isSubscriptionActive && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">
+                    <CreditCard className="w-3 h-3 text-slate-500" />
+                    <span>{daysRemaining} {t.remaining}</span>
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </header>
@@ -1739,7 +1764,7 @@ export default function StudentDashboardPage() {
                 <LanguageToggle />
               </div>
 
-              {/* Account Actions: Refresh & Sign Out */}
+              {/* Account Actions: Refresh */}
               <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs space-y-2">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
                   {t.accountActions || 'Account Actions'}
@@ -1747,25 +1772,13 @@ export default function StudentDashboardPage() {
                 <button
                   type="button"
                   onClick={handleRefresh}
-                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 text-slate-700 text-xs font-semibold transition"
+                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 text-slate-700 text-xs font-semibold transition cursor-pointer"
                 >
                   <span className="flex items-center gap-2">
                     <RefreshCw className="w-4 h-4 text-[#08795d]" />
                     {t.refresh}
                   </span>
                   <span className="text-[10px] text-slate-400">Sync latest</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={signOut}
-                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-rose-50 text-rose-600 text-xs font-semibold transition"
-                >
-                  <span className="flex items-center gap-2">
-                    <LogOut className="w-4 h-4" />
-                    {t.signOut}
-                  </span>
-                  <span className="text-[10px] text-rose-400">Exit account</span>
                 </button>
               </div>
             </div>
