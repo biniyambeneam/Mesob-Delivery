@@ -1,11 +1,13 @@
 import { useRef, useState } from 'react';
-import { Eye, EyeOff, KeyRound, Sparkles } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, KeyRound } from 'lucide-react';
 import LanguageToggle from '../components/LanguageToggle.jsx';
 import OnboardingTour from '../components/OnboardingTour.jsx';
 import { useAuth } from '../context/useAuth.js';
 import { useLanguage } from '../context/LanguageContext.jsx';
+import './AuthPage.css';
 
 const TOUR_STORAGE_KEY = 'cf_has_seen_tour_v1';
+const BRAND_EMBLEM_SRC = '/mesob-symbol.svg';
 
 export default function AuthPage() {
   const { signIn, signUp, isSupabaseConfigured } = useAuth();
@@ -25,6 +27,7 @@ export default function AuthPage() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [hasAcceptedPolicies, setHasAcceptedPolicies] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -48,6 +51,10 @@ export default function AuthPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
+
+    if (isSignup && !hasAcceptedPolicies) {
+      return;
+    }
 
     // Phone cleanup & validation
     const trimmedPhone = phone.trim();
@@ -96,69 +103,89 @@ export default function AuthPage() {
     return <OnboardingTour onFinish={handleFinishTour} />;
   }
 
+  const headingText = isSignup
+    ? isAmharic
+      ? 'የተማሪ አካውንት ይፍጠሩ'
+      : 'Create student account'
+    : isAmharic
+      ? 'እንኳን ደህና መጡ'
+      : 'Welcome 👋';
+
+  const subtitleText = isSignup
+    ? isAmharic
+      ? 'የካምፓስፉድ ተጠቃሚ በመሆን ምግብዎን በቀላሉ ወደ ዶርምዎ ያዘዙ።'
+      : 'Join CampusFood to order scheduled meals directly to your campus pickup point.'
+    : isAmharic
+      ? 'በምዝገባ ወቅት በተጠቀሙበት ስልክ ቁጥር እና የይለፍ ቃል ይግቡ።'
+      : "Good food, great vibes. Let's get you in!";
+
+  const submitLabel = isSignup
+    ? isAmharic
+      ? 'ይመዝገቡ'
+      : 'Sign Up'
+    : isAmharic
+      ? 'ግባ'
+      : 'Login';
+
   const isFormValid = phone.trim().length >= 9 && password.trim().length > 0;
 
   return (
-    <div className="cf-shell-wrapper">
-      <div
-        className="cf-phone-shell font-campus"
-        style={{
-          background: 'linear-gradient(180deg, #f7f6ea 0%, #ffffff 31%)',
-        }}
-      >
-        {/* Top Bar with Brand and Language Toggle */}
-        <div className="flex items-center justify-between px-6 pt-5 pb-2 z-10">
-          <div className="flex items-center gap-1.5 cursor-pointer" onClick={handleOpenTour} title="View Tour">
-            <span className="text-2xl font-extrabold text-[#08795d] tracking-tight">Campus</span>
-            <span className="text-2xl font-extrabold text-[#d48431] tracking-tight">Food</span>
+    <div className="cf-shell-wrapper auth-page">
+      {/* Decorative mesob emblem + arc, kept out of layout and tab order */}
+      <div className="auth-decor" aria-hidden="true">
+        <img className="auth-watermark" src={BRAND_EMBLEM_SRC} alt="" draggable="false" />
+        <span className="auth-curve" />
+      </div>
+
+      <div className="cf-phone-shell font-campus auth-shell">
+        {/* Brand and language selector */}
+        <header className="auth-header">
+          <button
+            type="button"
+            className="auth-brand"
+            onClick={handleOpenTour}
+            title="View app introduction tour"
+            aria-label="Mesob Delivery — view app introduction tour"
+          >
+            <img className="auth-emblem" src={BRAND_EMBLEM_SRC} alt="" draggable="false" />
+            <span className="auth-wordmark">
+              <span className="auth-wordmark-name">MESOB</span>
+              <span className="auth-wordmark-sub">Delivery</span>
+            </span>
+          </button>
+
+          <LanguageToggle className="auth-lang" />
+        </header>
+
+        {/* Main content */}
+        <main className="auth-main">
+          <div className="auth-heading-block">
+            <h1 className="auth-title">{headingText}</h1>
+            <p className="auth-subtitle">{subtitleText}</p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <LanguageToggle className="static" />
-          </div>
-        </div>
-
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col justify-start px-6 pt-6 sm:pt-10">
-          {/* Welcome Header */}
-          <div className="mb-6">
-            <h1 className="text-[32px] sm:text-[35px] font-bold text-[#101426] leading-tight tracking-[-1.5px]">
-              {isSignup
-                ? isAmharic
-                  ? 'የተማሪ አካውንት ይፍጠሩ'
-                  : 'Create student account'
-                : isAmharic
-                  ? 'እንኳን ደህና መጡ'
-                  : 'Welcome back'}
-            </h1>
-            <p className="mt-2 text-[15px] sm:text-[17px] text-[#596571] leading-relaxed">
-              {isSignup
-                ? isAmharic
-                  ? 'የካምፓስፉድ ተጠቃሚ በመሆን ምግብዎን በቀላሉ ወደ ዶርምዎ ያዘዙ።'
-                  : 'Join CampusFood to order scheduled meals directly to your campus pickup point.'
-                : isAmharic
-                  ? 'በምዝገባ ወቅት በተጠቀሙበት ስልክ ቁጥር እና የይለፍ ቃል ይግቡ።'
-                  : 'Login with the same phone number and password you used at signup.'}
-            </p>
-          </div>
-
-          {/* Form */}
-          <form className="space-y-4" onSubmit={handleSubmit}>
+          <form className="auth-form" onSubmit={handleSubmit}>
             {/* Phone Number Field */}
-            <div>
-              <label className="block text-[13px] font-semibold text-slate-800 mb-1.5">
+            <div className="auth-field">
+              <label className="auth-label" htmlFor="auth-phone">
                 {isAmharic ? 'ስልክ ቁጥር' : 'Phone Number'}
               </label>
-              <div className="cf-input-field flex items-center px-3.5">
-                {/* Green ET badge */}
-                <span className="bg-[#08795d] text-white text-[11px] font-bold px-2 py-0.5 rounded-[5px] tracking-wide select-none">
-                  ET
-                </span>
-                <span className="text-slate-800 font-semibold text-[15px] ml-2 mr-2 select-none">
-                  +251
-                </span>
+              <div className="auth-input-shell">
+                <svg className="auth-country-flag" viewBox="0 0 24 16" aria-hidden="true">
+                  <rect width="24" height="5.34" fill="#078930" />
+                  <rect y="5.33" width="24" height="5.34" fill="#FCDD09" />
+                  <rect y="10.66" width="24" height="5.34" fill="#DA121A" />
+                  <circle cx="12" cy="8" r="3.3" fill="#0F47AF" />
+                  <path
+                    d="m12 5.85.53 1.55h1.63l-1.32.96.5 1.55L12 8.95l-1.34.96.5-1.55-1.32-.96h1.63L12 5.85Z"
+                    fill="#FCDD09"
+                  />
+                </svg>
+                <span className="auth-country-code">+251</span>
+                <span className="auth-divider" aria-hidden="true" />
                 <input
-                  className="w-full bg-transparent text-[16px] text-slate-900 placeholder:text-slate-400 focus:outline-none tracking-wide"
+                  id="auth-phone"
+                  className="auth-input"
                   type="tel"
                   placeholder="09-12-xx-xx-xx"
                   value={phone}
@@ -176,15 +203,16 @@ export default function AuthPage() {
             </div>
 
             {/* Password Field */}
-            <div>
-              <label className="block text-[13px] font-semibold text-slate-800 mb-1.5">
+            <div className="auth-field">
+              <label className="auth-label" htmlFor="auth-password">
                 {isAmharic ? 'የይለፍ ቃል' : 'Password'}
               </label>
-              <div className="cf-input-field flex items-center px-3.5 gap-2.5">
-                <KeyRound className="w-5 h-5 text-[#08795d] shrink-0" />
+              <div className="auth-input-shell">
+                <KeyRound className="auth-field-icon" aria-hidden="true" />
                 <input
+                  id="auth-password"
                   ref={passwordInputRef}
-                  className="w-full bg-transparent text-[16px] text-slate-900 placeholder:text-slate-400 focus:outline-none"
+                  className="auth-input"
                   type={showPassword ? 'text' : 'password'}
                   placeholder={isAmharic ? 'የይለፍ ቃልዎን ያስገቡ' : 'Enter your password'}
                   value={password}
@@ -195,24 +223,26 @@ export default function AuthPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="text-slate-400 hover:text-slate-600 focus:outline-none p-1"
+                  className="auth-visibility"
                   aria-label="Toggle password visibility"
+                  aria-pressed={showPassword}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
                 </button>
               </div>
             </div>
 
             {/* Confirm Password Field (for signup mode) */}
             {isSignup ? (
-              <div>
-                <label className="block text-[13px] font-semibold text-slate-800 mb-1.5">
+              <div className="auth-field">
+                <label className="auth-label" htmlFor="auth-confirm-password">
                   {isAmharic ? 'የይለፍ ቃል ያረጋግጡ' : 'Confirm Password'}
                 </label>
-                <div className="cf-input-field flex items-center px-3.5 gap-2.5">
-                  <KeyRound className="w-5 h-5 text-[#08795d] shrink-0" />
+                <div className="auth-input-shell">
+                  <KeyRound className="auth-field-icon" aria-hidden="true" />
                   <input
-                    className="w-full bg-transparent text-[16px] text-slate-900 placeholder:text-slate-400 focus:outline-none"
+                    id="auth-confirm-password"
+                    className="auth-input"
                     type={showPassword ? 'text' : 'password'}
                     placeholder={isAmharic ? 'የይለፍ ቃልዎን በድጋሚ ያስገቡ' : 'Confirm your password'}
                     value={confirmPassword}
@@ -224,45 +254,66 @@ export default function AuthPage() {
               </div>
             ) : null}
 
+            {isSignup ? (
+              <div className="auth-consent">
+                <input
+                  id="auth-policy-consent"
+                  className="auth-consent-checkbox"
+                  type="checkbox"
+                  checked={hasAcceptedPolicies}
+                  onChange={(event) => setHasAcceptedPolicies(event.target.checked)}
+                  aria-labelledby="auth-consent-intro auth-terms-link auth-consent-and auth-privacy-link"
+                  required
+                />
+                <div className="auth-consent-copy">
+                  <label id="auth-consent-intro" htmlFor="auth-policy-consent">
+                    I agree to the
+                  </label>
+                  {' '}
+                  <button id="auth-terms-link" className="auth-policy-link" type="button">
+                    Terms of Use
+                  </button>
+                  <span id="auth-consent-and"> and </span>
+                  <button id="auth-privacy-link" className="auth-policy-link" type="button">
+                    Privacy Policy
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
             {/* Error Message */}
             {error ? (
-              <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs sm:text-sm text-rose-700 animate-fadeIn">
+              <div className="auth-error" role="alert">
                 {error}
               </div>
             ) : null}
 
             {/* Supabase Notice if not configured */}
             {!isSupabaseConfigured ? (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+              <div className="auth-notice">
                 Notice: Supabase environment variables are missing. Please configure them in your environment.
               </div>
             ) : null}
 
             {/* Primary Action Button */}
-            <div className="pt-2">
-              <button
-                className="cf-primary-btn"
-                type="submit"
-                disabled={loading || !isSupabaseConfigured || !isFormValid}
-              >
-                {loading ? (
-                  <span>{isAmharic ? 'እባክዎ ይጠብቁ...' : 'Please wait...'}</span>
-                ) : (
-                  <span>
-                    {isSignup
-                      ? isAmharic
-                        ? 'ይመዝገቡ'
-                        : 'Sign Up'
-                      : isAmharic
-                        ? 'ግባ'
-                        : 'Login'}
-                  </span>
-                )}
-              </button>
-            </div>
+            <button
+              className="auth-submit"
+              type="submit"
+              disabled={
+                loading ||
+                !isSupabaseConfigured ||
+                (isSignup && (!isFormValid || !hasAcceptedPolicies))
+              }
+              aria-busy={loading}
+            >
+              <span className="auth-submit-label">
+                {loading ? (isAmharic ? 'እባክዎ ይጠብቁ...' : 'Please wait...') : submitLabel}
+              </span>
+              <ArrowRight className="auth-submit-arrow" aria-hidden="true" />
+            </button>
 
             {/* Switch Mode Prompt */}
-            <div className="pt-2 text-center text-[13px] text-[#596571]">
+            <div className="auth-switch">
               <span>
                 {isSignup
                   ? isAmharic
@@ -274,9 +325,10 @@ export default function AuthPage() {
               </span>
               <button
                 type="button"
-                className="font-bold text-[#08795d] hover:underline focus:outline-none"
+                className="auth-switch-link"
                 onClick={() => {
                   setMode(isSignup ? 'login' : 'signup');
+                  setHasAcceptedPolicies(false);
                   setError('');
                 }}
               >
@@ -290,19 +342,8 @@ export default function AuthPage() {
               </button>
             </div>
           </form>
-        </div>
+        </main>
 
-        {/* Footer Area with Tour Link */}
-        <div className="mt-auto px-6 py-6 text-center border-t border-slate-100/60">
-          <button
-            type="button"
-            onClick={handleOpenTour}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-[#08795d] transition-colors"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-[#d48431]" />
-            <span>{isAmharic ? 'የመተግበሪያውን ጉብኝት ይመልከቱ' : 'View app introduction tour'}</span>
-          </button>
-        </div>
       </div>
     </div>
   );

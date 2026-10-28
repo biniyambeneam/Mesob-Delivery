@@ -1,4 +1,4 @@
-import { Clock3, MapPin, Sparkles, UtensilsCrossed } from 'lucide-react';
+import { Clock3, MapPin } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import { formatMealWindow } from '../lib/time.js';
 import { translateMealLabel } from '../lib/translations.js';
@@ -14,23 +14,23 @@ export default function MealStatusCard({ mealContext, pickupPoint }) {
     <div
       className={`rounded-2xl p-4 md:p-5 transition-all font-campus border ${
         isOrderingOpen
-          ? 'bg-gradient-to-br from-[#f7f6ea] via-white to-[#edf6ee] border-emerald-300/80 shadow-[0_8px_24px_rgba(8,121,93,0.1)]'
+          ? 'bg-gradient-to-br from-[#f7f6ea] via-white to-[#edf6ee] border-emerald-200/70 shadow-[0_4px_16px_rgba(8,121,93,0.07)]'
           : isUpcoming
-            ? 'bg-gradient-to-br from-amber-50/60 via-white to-amber-50/30 border-amber-200/80 shadow-sm'
+            ? 'bg-gradient-to-br from-amber-50/60 via-white to-amber-50/30 border-amber-200/70 shadow-[0_3px_12px_rgba(120,53,15,0.04)]'
             : 'bg-slate-50/80 border-slate-200/80'
       }`}
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Left: Meal Title & Status */}
         <div className="min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <span
-              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider ${
+              className={`inline-flex items-center gap-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${
                 isOrderingOpen
-                  ? 'bg-[#08795d] text-white shadow-sm'
+                  ? 'bg-[#08795d] px-3 py-1 text-white'
                   : isUpcoming
-                    ? 'bg-amber-100 text-amber-800'
-                    : 'bg-slate-200 text-slate-700'
+                    ? 'bg-amber-100 px-3 py-1 text-amber-800'
+                    : 'bg-slate-200 px-3 py-1 text-slate-700'
               }`}
             >
               {isOrderingOpen && (
@@ -59,21 +59,23 @@ export default function MealStatusCard({ mealContext, pickupPoint }) {
           </p>
         </div>
 
-        {/* Right: Consolidated Local Time & Pickup Station Pill */}
-        <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-          <div className="text-left sm:text-right">
-            <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 block">
+        <div className="flex min-w-0 items-start justify-between gap-3 border-t border-slate-100 pt-2 sm:flex-col sm:items-end sm:justify-center sm:border-t-0 sm:pt-0">
+          <div className="shrink-0 text-left sm:text-right">
+            <span className="block whitespace-nowrap text-[10px] font-semibold uppercase tracking-wider text-slate-400">
               {t.localTime}
             </span>
-            <span className="text-sm sm:text-base font-bold text-slate-900">
-              {mealContext.currentTimeLabel}
+            <span className="whitespace-nowrap text-sm font-bold text-slate-900 sm:text-base">
+              {mealContext.currentTimeLabel.replace(/\s+Local Time$/, '')}
             </span>
           </div>
 
           {pickupPoint && (
-            <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#08795d] bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60">
-              <MapPin className="w-3 h-3 text-[#08795d]" />
-              <span>{t.assignedPickupStation || 'Pickup'}: Building {pickupPoint}</span>
+            <div className="flex min-w-0 max-w-[70%] items-start gap-1.5 text-[11px] font-semibold text-[#08795d] sm:max-w-full">
+              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#08795d]" />
+              <span className="min-w-0 break-words leading-4">
+                <span className="whitespace-nowrap">{t.assignedPickupStation || 'Pickup'}: </span>
+                <span className="font-bold text-slate-900">Building {pickupPoint}</span>
+              </span>
             </div>
           )}
         </div>

@@ -582,29 +582,32 @@ export default function StudentDashboardPage() {
         {/* COMPACT TOP HEADER */}
         <header className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-slate-200/80 px-4 py-3 sm:px-6">
           <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
-            {/* CampusFood Wordmark */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-xl sm:text-2xl font-extrabold text-[#08795d] tracking-tight">Campus</span>
-              <span className="text-xl sm:text-2xl font-extrabold text-[#d48431] tracking-tight">Food</span>
+            <div className="flex min-w-0 items-center gap-2">
+              <img
+                src="/mesob-symbol.svg"
+                alt=""
+                className="h-8 w-auto shrink-0 sm:h-9"
+              />
+              <span className="flex min-w-0 flex-col leading-none">
+                <span className="text-base font-extrabold tracking-tight text-[#075b49] sm:text-lg">MESOB</span>
+                <span className="mt-1 text-[8px] font-semibold uppercase tracking-[0.24em] text-[#c99a35] sm:text-[9px]">
+                  Delivery
+                </span>
+              </span>
             </div>
 
-            {/* Right: Station, Language Toggle, and Sign Out */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#08795d] bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60">
-                <MapPin className="w-3 h-3 text-[#08795d]" />
-                <span>Station: {profile?.pickup_point || 'T22'}</span>
-              </span>
-
+            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
               <LanguageToggle />
 
               <button
                 type="button"
                 onClick={signOut}
-                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                disabled={isLoggingOut}
+                className="inline-flex h-11 w-11 min-h-[44px] items-center justify-center rounded-xl border border-rose-100 bg-rose-50 text-rose-700 transition-colors hover:bg-rose-100 disabled:opacity-50"
                 title={t.signOut || 'Sign out'}
+                aria-label="Sign out"
               >
-                <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{t.signOut || 'Sign out'}</span>
+                <LogOut className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -953,10 +956,14 @@ export default function StudentDashboardPage() {
       {/* DESKTOP SIDEBAR NAVIGATION (Hidden on mobile, md:flex)   */}
       {/* ======================================================== */}
       <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:bg-white md:border-r md:border-slate-200/80 md:z-30 p-5 shadow-xs">
-        {/* Brand Wordmark */}
-        <div className="flex items-center gap-1.5 px-2 py-2 mb-8">
-          <span className="text-2xl font-extrabold text-[#08795d] tracking-tight">Campus</span>
-          <span className="text-2xl font-extrabold text-[#d48431] tracking-tight">Food</span>
+        <div className="mb-8 flex items-center gap-2 px-2 py-2">
+          <img src="/mesob-symbol.svg" alt="" className="h-10 w-auto shrink-0" />
+          <span className="flex min-w-0 flex-col leading-none">
+            <span className="text-xl font-extrabold tracking-tight text-[#075b49]">MESOB</span>
+            <span className="mt-1 text-[9px] font-semibold uppercase tracking-[0.24em] text-[#c99a35]">
+              Delivery
+            </span>
+          </span>
         </div>
 
         {/* Navigation Links */}
@@ -1058,11 +1065,20 @@ export default function StudentDashboardPage() {
         {/* COMPACT TOP HEADER */}
         <header className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-slate-200/70 px-4 py-3 sm:px-6">
           <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
-            {/* Left: Mobile Wordmark & Student Greeting */}
-            <div>
-              <div className="flex items-center gap-1.5 md:hidden mb-0.5">
-                <span className="text-lg font-extrabold text-[#08795d] tracking-tight">Campus</span>
-                <span className="text-lg font-extrabold text-[#d48431] tracking-tight">Food</span>
+            {/* Mobile brand and student greeting */}
+            <div className="min-w-0">
+              <div className="mb-1 flex min-w-0 items-center gap-1.5 md:hidden">
+                <img
+                  src="/mesob-symbol.svg"
+                  alt=""
+                  className="h-7 w-auto shrink-0"
+                />
+                <span className="flex min-w-0 flex-col leading-none">
+                  <span className="text-base font-extrabold tracking-tight text-[#075b49]">MESOB</span>
+                  <span className="mt-0.5 text-[7px] font-semibold uppercase tracking-[0.24em] text-[#c99a35]">
+                    Delivery
+                  </span>
+                </span>
               </div>
               <h1 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-1.5">
                 <span>{t.hello}</span>
@@ -1071,34 +1087,21 @@ export default function StudentDashboardPage() {
               </h1>
             </div>
 
-            {/* Right: Station Badge & Mobile Logout Control */}
-            <div className="flex items-center gap-2.5">
-              {/* Mobile: Station & Logout Control stacked cleanly (logout placed immediately above station) */}
-              <div className="flex flex-col items-end gap-1 md:hidden">
+            <div className="flex shrink-0 items-center gap-2.5">
+              <div className="md:hidden">
                 <button
                   type="button"
                   onClick={signOut}
                   disabled={isLoggingOut}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-rose-600 bg-rose-50/90 hover:bg-rose-100 rounded-lg border border-rose-200/80 transition-colors shadow-2xs cursor-pointer min-h-[32px] disabled:opacity-50"
-                  aria-label={t.signOut || 'Log out'}
-                  title={t.signOut || 'Log out'}
+                  className="inline-flex h-11 w-11 min-h-[44px] items-center justify-center rounded-xl border border-rose-100 bg-rose-50 text-rose-700 transition-colors hover:bg-rose-100 disabled:opacity-50"
+                  aria-label="Sign out"
+                  title={t.signOut || 'Sign out'}
                 >
-                  <LogOut className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                  <span>{t.signOut || 'Log out'}</span>
+                  <LogOut className="h-4 w-4" aria-hidden="true" />
                 </button>
-                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#08795d] bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/60">
-                  <MapPin className="w-3 h-3 text-[#08795d]" />
-                  <span>Station: {profile?.pickup_point || 'T22'}</span>
-                </span>
               </div>
 
-              {/* Desktop: Station Badge & Remaining Days Pill */}
-              <div className="hidden md:flex items-center gap-2.5">
-                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#08795d] bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60">
-                  <MapPin className="w-3 h-3 text-[#08795d]" />
-                  <span>Station: {profile?.pickup_point || 'T22'}</span>
-                </span>
-
+              <div className="hidden items-center gap-2.5 md:flex">
                 {isSubscriptionActive && (
                   <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">
                     <CreditCard className="w-3 h-3 text-slate-500" />
