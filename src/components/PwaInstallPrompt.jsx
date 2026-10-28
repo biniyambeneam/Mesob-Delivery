@@ -69,7 +69,7 @@ export default function PwaInstallPrompt() {
             <Smartphone className="h-5 w-5 text-emerald-800" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-950">Install CampusFood</p>
+            <p className="text-sm font-semibold text-slate-950">Install Mesob Delivery</p>
             <p className="mt-1 text-sm text-slate-600">
               Add the app to your home screen for a faster, native mobile experience.
             </p>

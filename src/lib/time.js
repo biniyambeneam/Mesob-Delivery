@@ -39,6 +39,11 @@ function formatLocalTimeFromMinutes(totalMinutes) {
 // Development flag: Keeps ordering windows open for testing at any hour
 export const DEV_MODE_ALWAYS_OPEN = true;
 
+const demoMealWindow =
+  import.meta.env.DEV
+    ? MEAL_WINDOWS.find((window) => window.mealType === import.meta.env.VITE_DEMO_MEAL)
+    : null;
+
 export function getMealWindowState(now = new Date()) {
   const zonedMinutes = getMinutesInZone(now);
   const today = formatInTimeZone(now, ETHIOPIA_TIMEZONE, 'yyyy-MM-dd');
@@ -55,11 +60,13 @@ export function getMealWindowState(now = new Date()) {
     MEAL_WINDOWS.find((window) => zonedMinutes < window.startMinutes) ??
     (activeWindow ? null : { ...MEAL_WINDOWS[0], date: tomorrow, nextDay: true });
 
-  const focusWindow = activeWindow ?? upcomingWindow;
+  const focusWindow = demoMealWindow ?? activeWindow ?? upcomingWindow;
   const focusDate = activeWindow ? today : upcomingWindow?.nextDay ? tomorrow : today;
 
   return {
-    activeMeal: DEV_MODE_ALWAYS_OPEN ? (activeWindow?.mealType || focusWindow?.mealType || 'Lunch') : (activeWindow?.mealType ?? null),
+    activeMeal: DEV_MODE_ALWAYS_OPEN
+      ? (demoMealWindow?.mealType || activeWindow?.mealType || focusWindow?.mealType || 'Lunch')
+      : (activeWindow?.mealType ?? null),
     upcomingMeal: upcomingWindow?.mealType ?? null,
     focusMeal: focusWindow?.mealType ?? 'Lunch',
     isOrderingOpen: DEV_MODE_ALWAYS_OPEN ? true : Boolean(activeWindow),

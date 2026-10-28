@@ -12,7 +12,6 @@ import {
   Sparkles,
   Utensils,
 } from 'lucide-react';
-import LanguageToggle from './LanguageToggle.jsx';
 import { useLanguage } from '../context/LanguageContext.jsx';
 
 // Slide 0: CSS Burger & Food Artwork
@@ -283,23 +282,22 @@ export default function OnboardingTour({ onFinish }) {
   return (
     <div className="cf-shell-wrapper">
       <div className="cf-phone-shell font-campus">
-        {/* Top Header with Skip & Language */}
-        <div className="flex items-center justify-between px-6 pt-5 pb-2 z-10">
-          <div className="flex items-center gap-1.5">
-            <span className="text-xl font-extrabold text-[#08795d] tracking-tight">Campus</span>
-            <span className="text-xl font-extrabold text-[#d48431] tracking-tight">Food</span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <LanguageToggle className="static" />
-            <button
-              type="button"
-              onClick={onFinish}
-              className="text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors px-2 py-1"
-            >
-              {isAmharic ? 'ዝለል' : 'Skip'}
-            </button>
-          </div>
+        {/* Mesob Delivery branding */}
+        <div className="z-10 flex min-w-0 items-center gap-3 px-6 pt-5 pb-2">
+          <img
+            src="/mesob-symbol.svg"
+            alt=""
+            className="h-[38px] w-auto shrink-0"
+            draggable="false"
+          />
+          <span className="flex min-w-0 flex-col leading-none">
+            <span className="text-[18px] font-extrabold tracking-[0.02em] text-[#075b49]">
+              MESOB
+            </span>
+            <span className="mt-[3px] text-[9px] font-semibold uppercase tracking-[0.3em] text-[#c99a35]">
+              Delivery
+            </span>
+          </span>
         </div>
 
         {/* Central Illustration Area with Floating Cards */}

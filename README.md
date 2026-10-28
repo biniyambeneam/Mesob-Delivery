@@ -113,7 +113,11 @@ The database schema is defined in [`supabase-schema.sql`](supabase-schema.sql) a
 │   ├── campusfood-design-tokens.json          # Raw design tokens in JSON
 │   └── PROJECT_VIDEO_SCRIPT.md                # 5-minute video presentation script & checklist
 ├── public/                                    # Public static assets & PWA manifest icons
-│   ├── favicon.svg & icons.svg & food-delivery.png
+│   ├── favicon.svg & icons.svg
+│   ├── mesob-symbol.svg
+│   ├── mesob-icon-32.png & apple-touch-icon.png
+│   ├── mesob-icon-192.png & mesob-icon-512.png
+│   └── mesob-icon-maskable-512.png
 ├── src/
 │   ├── components/                            # Modular UI components (MealStatusCard, OrderCard, etc.)
 │   ├── context/                               # Global AuthContext & LanguageContext providers
