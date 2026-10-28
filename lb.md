@@ -1,4 +1,4 @@
-# CampusFood Logout Audit — Read-only Findings
+# Mesob Delivery Logout Audit — Read-only Findings
 
 ## 1. Executive Summary
 
@@ -223,7 +223,7 @@ No evidence was found for a severe routing failure or missing client-side dashbo
 
 ## 14. Recommended Premium Redesign Direction
 
-The source contains the requested brand colors in [campusfood.css](./src/campusfood.css#L1): primary green `#08795d`, warm accent `#d48431`, and cream `#f7f6ea`. The global font stack uses Outfit in [index.css](./src/index.css#L14), while the CampusFood-specific utility uses Poppins in [campusfood.css](./src/campusfood.css#L18). Existing UI uses rounded buttons and cards, which gives a reasonable foundation for a polished account-action treatment.
+The source contains the requested brand colors in [campusfood.css](./src/campusfood.css#L1): primary green `#08795d`, warm accent `#d48431`, and cream `#f7f6ea`. The global font stack uses Outfit in [index.css](./src/index.css#L14), while the legacy campus-specific utility uses Poppins in [campusfood.css](./src/campusfood.css#L18). Existing UI uses rounded buttons and cards, which gives a reasonable foundation for a polished account-action treatment.
 
 For a later phase, I would first choose a clear logout location per viewport rather than simply adding another control: retain a persistent desktop account/sidebar action if it fits the dashboard flow, then decide whether mobile should use a header shortcut, Profile/account area, or both for a specific reason. Keep the action visually distinct from ordinary navigation without making it compete with primary meal and operations actions. A consistent explicit accessible name, visible keyboard focus, appropriately sized mobile target, and clear in-progress/error feedback would address the most concrete gaps. A confirmation step is optional: it can reduce accidental sign-outs, but adds friction to a common action. The shared auth method already exists; a shared button component is only worth considering if it makes the different layouts and feedback genuinely more consistent.
 

@@ -546,9 +546,14 @@ export default function ManagerDashboardPage() {
       <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:top-0 md:bottom-0 md:left-0 md:bg-white md:border-r md:border-slate-200/80 md:z-30 p-5 shadow-xs overflow-y-auto">
         {/* Brand Wordmark & Role Pill */}
         <div className="px-2 py-2 mb-6">
-          <div className="flex items-center gap-1.5">
-            <span className="text-2xl font-extrabold text-[#08795d] tracking-tight">Campus</span>
-            <span className="text-2xl font-extrabold text-[#d48431] tracking-tight">Food</span>
+          <div className="flex items-center gap-2">
+            <img src="/mesob-symbol.svg" alt="" className="h-10 w-auto shrink-0" />
+            <span className="flex min-w-0 flex-col leading-none">
+              <span className="text-xl font-extrabold tracking-tight text-[#075b49]">MESOB</span>
+              <span className="mt-1 text-[9px] font-semibold uppercase tracking-[0.24em] text-[#c99a35]">
+                Delivery
+              </span>
+            </span>
           </div>
           <div className="mt-1 flex items-center gap-1.5">
             <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-md">

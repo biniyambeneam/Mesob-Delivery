@@ -113,8 +113,8 @@ export default function AuthPage() {
 
   const subtitleText = isSignup
     ? isAmharic
-      ? 'የካምፓስፉድ ተጠቃሚ በመሆን ምግብዎን በቀላሉ ወደ ዶርምዎ ያዘዙ።'
-      : 'Join CampusFood to order scheduled meals directly to your campus pickup point.'
+      ? 'የMesob Delivery ተጠቃሚ በመሆን ምግብዎን በቀላሉ ወደ ዶርምዎ ያዘዙ።'
+      : 'Join Mesob Delivery to order scheduled meals directly to your campus pickup point.'
     : isAmharic
       ? 'በምዝገባ ወቅት በተጠቀሙበት ስልክ ቁጥር እና የይለፍ ቃል ይግቡ።'
       : "Good food, great vibes. Let's get you in!";
@@ -319,7 +319,7 @@ export default function AuthPage() {
                     : 'Already have an account? '
                   : isAmharic
                     ? 'አዲስ ተጠቃሚ ነዎት? '
-                    : 'New to CampusFood? '}
+                    : 'New to Mesob Delivery? '}
               </span>
               <button
                 type="button"

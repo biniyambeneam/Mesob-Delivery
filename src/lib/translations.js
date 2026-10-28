@@ -6,7 +6,7 @@ export const translations = {
     phoneNum: "Phone Number",
     password: "Password",
     welcomeBack: "Welcome back",
-    newToApp: "New to CampusFood? ",
+    newToApp: "New to Mesob Delivery? ",
     signUpHere: "Sign up here",
     alreadyHaveAccount: "Already have an account? ",
     logInHere: "Log in here",
@@ -84,7 +84,7 @@ export const translations = {
     // Payments
     subRequired: "Meal refill required",
     subExpiredMsg: "Your meal credits have run out. Please refill your account via CBE Birr or Telebirr.",
-    welcomeNewStudent: "Welcome to CampusFood!",
+    welcomeNewStudent: "Welcome to Mesob Delivery!",
     activatePlanTitle: "Activate Your Monthly Meal Plan",
     activatePlanDesc: "To start ordering freshly prepared meals delivered directly to your dorm pickup station, choose a monthly meal plan and submit your payment details.",
     pendingApprovalTitle: "Payment Proof Submitted",
@@ -257,7 +257,7 @@ export const translations = {
     // Payments
     subRequired: "ክፍያ ያስፈልጋል",
     subExpiredMsg: "የምግብ ክሬዲትዎ አልቋል እባክዎ በCBE Birr ወይም ቴሌብር ሂሳቦን ይሙሉ::",
-    welcomeNewStudent: "እንኳን ወደ CampusFood ደህና መጡ!",
+    welcomeNewStudent: "እንኳን ወደ Mesob Delivery ደህና መጡ!",
     activatePlanTitle: "የወር የምግብ እቅድዎን ያስጀምሩ",
     activatePlanDesc: "በዶርምዎ የመቀበያ ቦታ ዕለታዊ ምግቦችን በቀጥታ ለማግኘት ከታች ካሉት የወር እቅዶች አንዱን ይምረጡና የክፍያ ማረጋገጫዎን ያስገቡ።",
     pendingApprovalTitle: "የክፍያ ማረጋገጫ ተልኳል",

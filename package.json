@@ -1,6 +1,6 @@
 {
-  "name": "campusfood",
-  "description": "Scheduled campus meal-subscription and dorm delivery platform for university cafeterias",
+  "name": "mesob-delivery",
+  "description": "Mesob Delivery campus meal subscription and scheduled pickup application",
   "private": true,
   "version": "1.0.0",
   "type": "module",

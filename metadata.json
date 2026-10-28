@@ -1,6 +1,6 @@
 {
   "name": "Mesob Delivery",
-  "description": "Campus food ordering and meal delivery service for university students and managers.",
+  "description": "Mesob Delivery provides meal subscriptions, scheduled campus pickup, and cafeteria management for university communities.",
   "permissions": [],
   "capabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

@@ -91,13 +91,13 @@ function PickupArt() {
             {/* Bag fold lines */}
             <div className="absolute top-2 inset-x-2 h-0.5 bg-black/10" />
 
-            {/* CampusFood emblem */}
+            {/* Mesob Delivery mark */}
             <div className="w-12 h-12 rounded-full bg-white/90 flex flex-col items-center justify-center shadow-sm">
               <ShoppingBag className="w-6 h-6 text-[#08795d]" />
             </div>
 
             <div className="mt-2 text-[10px] font-black uppercase tracking-wider text-amber-950/70">
-              CampusFood
+              Mesob Delivery
             </div>
           </div>
         </div>

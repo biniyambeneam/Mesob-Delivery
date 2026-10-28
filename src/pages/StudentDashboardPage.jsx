@@ -731,7 +731,7 @@ export default function StudentDashboardPage() {
                   </div>
                   <div>
                     <span className="text-[11px] font-bold uppercase tracking-wider text-[#08795d] block">
-                      {t.welcomeNewStudent || 'Welcome to CampusFood!'}
+                      {t.welcomeNewStudent || 'Welcome to Mesob Delivery!'}
                     </span>
                     <h2 className="text-base sm:text-lg font-extrabold text-slate-900 mt-0.5">
                       {t.activatePlanTitle || 'Activate Your Monthly Meal Plan'}

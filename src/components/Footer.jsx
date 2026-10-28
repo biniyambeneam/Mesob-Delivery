@@ -13,12 +13,12 @@ const Footer = () => {
     <footer className="hidden md:block md:pl-64 border-t border-slate-200/60 bg-transparent py-5 text-center text-xs text-slate-500">
       <div className="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="flex items-center gap-1.5 font-campus">
-          <span className="font-extrabold text-[#08795d]">Campus</span>
-          <span className="font-extrabold text-[#d48431]">Food</span>
+          <span className="font-extrabold text-[#08795d]">MESOB</span>
+          <span className="font-extrabold text-[#d48431]">DELIVERY</span>
           <span className="text-slate-400 ml-1">• University Meal Service</span>
         </div>
         <p className="text-slate-400">
-          &copy; {new Date().getFullYear()} CampusFood. All rights reserved.
+          &copy; {new Date().getFullYear()} Mesob Delivery. All rights reserved.
         </p>
       </div>
     </footer>

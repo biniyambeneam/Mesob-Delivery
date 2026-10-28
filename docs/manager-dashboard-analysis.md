@@ -1,8 +1,8 @@
-# CampusFood: Manager Dashboard Technical Analysis & Operational Blueprint
+# Mesob Delivery: Manager Dashboard Technical Analysis & Operational Blueprint
 
 **Document Reference:** `docs/manager-dashboard-analysis.md`  
 **Date:** October 28, 2026  
-**Project:** CampusFood (ካምፓስ ምግብ)  
+**Project:** Mesob Delivery
 **Academic Context:** Capstone Project — INSA Cyber Talent Center Software Development Summer Camp at Bahir Dar University  
 **Scope:** Technical audit, architecture analysis, workflow evaluation, and improvement blueprint for the Cafeteria Manager Dashboard.  
 **Mode:** Analysis-Only (Zero modifications to application source code, Supabase database, or database schemas).
@@ -11,7 +11,7 @@
 
 ## 1. Executive Summary
 
-CampusFood is a scheduled, prepaid university cafeteria meal-subscription and dorm delivery web application designed to solve dining hall congestion, long food queues, and kitchen food waste at Ethiopian universities (specifically modeled around Bahir Dar University dorm clusters).
+Mesob Delivery is a scheduled, prepaid university cafeteria meal-subscription and dorm pickup web application designed to address dining hall congestion, long food queues, and kitchen food waste at Ethiopian universities (specifically modeled around Bahir Dar University dorm clusters).
 
 The platform uses a **batch delivery model**: authorized students with active monthly subscriptions choose a single dish from the active meal window (Breakfast, Lunch, or Dinner), and the central cafeteria kitchen prepares, packs, and dispatches batch meals directly to two clustered dorm pickup stations (**Building T22** for female students and **Building T34** for male students).
 
@@ -33,11 +33,11 @@ The existing manager dashboard (`src/pages/ManagerDashboardPage.jsx`) provides f
 
 ## 2. Application Architecture
 
-CampusFood is structured as a client-rendered React single-page application communicating directly with a Supabase PostgreSQL backend via client-side libraries.
+Mesob Delivery is structured as a client-rendered React single-page application communicating directly with a Supabase PostgreSQL backend via client-side libraries.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                       CampusFood Frontend (React 19 + Vite 8)               │
+│                       Mesob Delivery Frontend (React 19 + Vite 8)           │
 │                                                                             │
 │   ┌─────────────────────────────────────────────────────────────────────┐   │
 │   │                         Route Controller (App.jsx)                   │   │
@@ -131,7 +131,7 @@ At the top of the main viewport, an overview strip presents four summary metric 
     * `LanguageToggle` component (mobile view).
     * Icon-only Logout button (mobile view, 40×40px target, `aria-label="Log out"`).
 * **Sidebar Navigation (Desktop):**
-  * Brand wordmark ("CampusFood Operations Manager").
+  * Brand wordmark ("Mesob Delivery Operations Manager").
   * 4 navigation tabs with live badge counters.
   * Sidebar footer: Language toggle, Manager profile pill, and signout button.
 * **Bottom Navigation Bar (Mobile):**
@@ -501,7 +501,7 @@ During peak distribution at dorm drop-off stations T22 and T34, minibus staff ne
 | **Option D: Barcode / QR Code Scanner** | Complex | Requires generating & storing QR codes | High (requires hardware scanner or mobile camera app) | Overengineered |
 
 ### Why Student ID Is the Superior Solution
-1. **Strict 1:1 Relationship:** Because CampusFood enforces `orders_one_per_user_per_meal_per_day`, **1 order = 1 meal = 1 container**. A student can never have 2 or 3 containers in the same meal window.
+1. **Strict 1:1 Relationship:** Because Mesob Delivery enforces `orders_one_per_user_per_meal_per_day`, **1 order = 1 meal = 1 container**. A student can never have 2 or 3 containers in the same meal window.
 2. **Guaranteed Uniqueness:** `users.identity_number` is already enforced as `UNIQUE` in the PostgreSQL database.
 3. **Physical Verification at Pickup:** Students are already required to present their university ID card when collecting food. Matching the ID number on the container to the student's physical card provides instant, foolproof verification without any new database columns.
 
@@ -552,7 +552,7 @@ To resolve the separation between cooking, packing, and dispatch, the manager da
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  CampusFood Operations — Header (Active Window: LUNCH • Closes in 45m)       │
+│  Mesob Delivery Operations — Header (Active Window: LUNCH • Closes in 45m)   │
 │  [Refresh]  [Language]  [Sign Out]                                          │
 └─────────────────────────────────────────────────────────────────────────────┘
 ┌─────────────────────────────────────────────────────────────────────────────┐
