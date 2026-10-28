@@ -1,6 +1,29 @@
 # Mesob Delivery
 
-> **Demo accounts:** To let others explore the app, configure dedicated demo-only student and manager accounts in a non-production environment. Share their credentials privately; do not publish passwords or production account details in this repository.
+
+> **Demo Login Credentials**
+>
+> Use the following accounts to explore the application.
+
+### 🎓 Student Account
+
+| Field | Credentials |
+|---|---|
+| **Phone Number** | `0950271983` |
+| **Password** | `biniyam` |
+| **Role** | Student |
+
+### 🛠️ Manager Account
+
+| Field | Credentials |
+|---|---|
+| **Phone Number** | `0950271984` |
+| **Password** | `biniyam` |
+| **Role** | Manager |
+
+---
+
+**Note:** These credentials are intended for demonstration and testing purposes only.
 
 Mesob Delivery is a mobile-first meal subscription and scheduled cafeteria pickup application for university communities. Students can manage a meal subscription, choose dishes during meal windows, and follow order progress to campus pickup points. Cafeteria managers can manage menus, review subscriptions, and coordinate meal preparation and pickup.
 
