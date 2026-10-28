@@ -7,6 +7,7 @@ import {
   Check,
   CheckCircle2,
   ChefHat,
+  ChevronRight,
   Clock3,
   ExternalLink,
   Eye,
@@ -18,6 +19,7 @@ import {
   Package,
   Plus,
   RefreshCw,
+  Search,
   ShoppingBag,
   Sparkles,
   Trash2,
@@ -25,6 +27,7 @@ import {
   Upload,
   UserCheck,
   UserRound,
+  Users,
   Utensils,
   UtensilsCrossed,
   Wallet,
@@ -95,6 +98,11 @@ export default function ManagerDashboardPage() {
   const [rejectingStudent, setRejectingStudent] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [viewingReceiptStudent, setViewingReceiptStudent] = useState(null);
+  const [selectedKitchenDish, setSelectedKitchenDish] = useState(null);
+  const [kitchenStudentSearch, setKitchenStudentSearch] = useState('');
+  const [kitchenStationFilter, setKitchenStationFilter] = useState('All');
+  const [dispatchSearchQuery, setDispatchSearchQuery] = useState('');
+  const [dispatchStationFilter, setDispatchStationFilter] = useState('All');
 
   const focusedMeal = mealContext.focusMeal;
 
@@ -232,18 +240,51 @@ export default function ManagerDashboardPage() {
     };
   }, [loadDashboard]);
 
-  const kitchenTotals = useMemo(() => {
-    return orders.reduce((accumulator, order) => {
-      const itemName = order.menu?.name ?? 'Unknown item';
-      accumulator[itemName] = (accumulator[itemName] ?? 0) + 1;
-      return accumulator;
-    }, {});
-  }, [orders]);
+  const kitchenDishes = useMemo(() => {
+    const dishMap = new Map();
+
+    orders.forEach((order) => {
+      const itemName = order.menu?.name || 'Unknown item';
+      if (!dishMap.has(itemName)) {
+        const matchingMenuItem = menuItems.find(
+          (m) => m.name === itemName && m.meal_type === focusedMeal,
+        );
+        dishMap.set(itemName, {
+          itemName,
+          menuItem: matchingMenuItem || null,
+          totalCount: 0,
+          t22Count: 0,
+          t34Count: 0,
+          otherCount: 0,
+          orders: [],
+        });
+      }
+
+      const dish = dishMap.get(itemName);
+      dish.totalCount += 1;
+      const pickup = order.user?.pickup_point;
+      if (pickup === 'T22') {
+        dish.t22Count += 1;
+      } else if (pickup === 'T34') {
+        dish.t34Count += 1;
+      } else {
+        dish.otherCount += 1;
+      }
+      dish.orders.push(order);
+    });
+
+    return Array.from(dishMap.values()).sort(
+      (a, b) => b.totalCount - a.totalCount || a.itemName.localeCompare(b.itemName),
+    );
+  }, [orders, menuItems, focusedMeal]);
 
   const groupedOrders = useMemo(
     () => ({
       T22: orders.filter((order) => order.user?.pickup_point === 'T22'),
       T34: orders.filter((order) => order.user?.pickup_point === 'T34'),
+      Other: orders.filter(
+        (order) => order.user?.pickup_point !== 'T22' && order.user?.pickup_point !== 'T34',
+      ),
     }),
     [orders],
   );
@@ -732,7 +773,7 @@ export default function ManagerDashboardPage() {
           {/* ======================================================== */}
           {activeTab === 'kitchen' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <h2 className="text-lg sm:text-xl font-extrabold text-[#101426] tracking-tight">
                     {focusedMeal ? formatTotalsTitle(language, t, focusedMeal) : t.kitchenView}
@@ -741,6 +782,15 @@ export default function ManagerDashboardPage() {
                     {t.kitchenTotalsDesc || 'Portion counts for cooks to prepare before minibus departure.'}
                   </p>
                 </div>
+
+                {orders.length > 0 && (
+                  <div className="inline-flex items-center gap-2 self-start sm:self-auto rounded-xl bg-slate-100 border border-slate-200/80 px-3 py-1.5 text-xs font-semibold text-slate-700">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>
+                      {orders.length} {t.portions || 'portions'} ({groupedOrders.T22.length} T22 • {groupedOrders.T34.length} T34{groupedOrders.Other.length > 0 ? ` • ${groupedOrders.Other.length} Other` : ''})
+                    </span>
+                  </div>
+                )}
               </div>
 
               {loading ? (
@@ -748,37 +798,41 @@ export default function ManagerDashboardPage() {
                   <LoaderCircle className="w-6 h-6 animate-spin text-[#08795d] mx-auto mb-2" />
                   <span>Loading kitchen totals...</span>
                 </div>
-              ) : Object.keys(kitchenTotals).length > 0 ? (
+              ) : kitchenDishes.length > 0 ? (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {Object.entries(kitchenTotals).map(([itemName, count]) => {
-                    const matchingMenuItem = menuItems.find(
-                      (m) => m.name === itemName && m.meal_type === focusedMeal
-                    );
+                  {kitchenDishes.map((dish) => {
+                    const matchingMenuItem = dish.menuItem;
                     const maxServings = matchingMenuItem?.max_servings;
                     const isSoldOut = Boolean(
-                      matchingMenuItem?.is_sold_out || (maxServings && count >= maxServings)
+                      matchingMenuItem?.is_sold_out || (maxServings && dish.totalCount >= maxServings)
                     );
                     const percentage = maxServings
-                      ? Math.min(100, Math.round((count / maxServings) * 100))
+                      ? Math.min(100, Math.round((dish.totalCount / maxServings) * 100))
                       : null;
 
                     return (
                       <div
-                        key={itemName}
-                        className={`rounded-2xl border p-4 bg-white shadow-xs transition flex flex-col justify-between ${
+                        key={dish.itemName}
+                        onClick={() => {
+                          setSelectedKitchenDish(dish);
+                          setKitchenStudentSearch('');
+                          setKitchenStationFilter('All');
+                        }}
+                        className={`rounded-2xl border p-4 bg-white shadow-xs transition flex flex-col justify-between cursor-pointer group active:scale-[0.99] ${
                           isSoldOut
-                            ? 'border-rose-200 bg-rose-50/20'
-                            : 'border-slate-200/80 hover:border-emerald-300'
+                            ? 'border-rose-200 bg-rose-50/20 hover:border-rose-300'
+                            : 'border-slate-200/80 hover:border-[#08795d]/60 hover:shadow-md'
                         }`}
                       >
                         <div>
+                          {/* Card Header: Total Portions & Availability Status */}
                           <div className="flex items-start justify-between gap-2">
                             <div>
                               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                 Required Portions
                               </span>
                               <div className="flex items-baseline gap-1 mt-0.5">
-                                <span className="text-3xl font-black text-slate-900">{count}x</span>
+                                <span className="text-3xl font-black text-slate-900">{dish.totalCount}x</span>
                                 {maxServings && (
                                   <span className="text-xs font-semibold text-slate-400">
                                     / {maxServings} max
@@ -792,7 +846,7 @@ export default function ManagerDashboardPage() {
                                 <Ban className="w-3 h-3" />
                                 {t.soldOut || 'Sold Out'}
                               </span>
-                            ) : maxServings && count >= maxServings * 0.8 ? (
+                            ) : maxServings && dish.totalCount >= maxServings * 0.8 ? (
                               <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800">
                                 Near Limit
                               </span>
@@ -803,46 +857,92 @@ export default function ManagerDashboardPage() {
                             )}
                           </div>
 
-                          <h3 className="text-base font-bold text-slate-900 mt-2">{itemName}</h3>
+                          {/* Food Item Headline */}
+                          <h3 className="text-base font-bold text-slate-900 mt-2.5 group-hover:text-[#08795d] transition">
+                            {dish.itemName} — {dish.totalCount} {t.portions || 'portions'}
+                          </h3>
 
+                          {/* Pickup Location Breakdown (T22 and T34) */}
+                          <div className="mt-2.5 rounded-xl bg-slate-50 border border-slate-100 p-2.5 space-y-1 text-xs">
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-slate-700 flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-purple-600" />
+                                T22:
+                              </span>
+                              <span className="font-bold text-slate-900">
+                                {dish.t22Count} {t.portions || 'portions'}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-slate-700 flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-sky-600" />
+                                T34:
+                              </span>
+                              <span className="font-bold text-slate-900">
+                                {dish.t34Count} {t.portions || 'portions'}
+                              </span>
+                            </div>
+                            {dish.otherCount > 0 && (
+                              <div className="flex items-center justify-between text-amber-800">
+                                <span className="font-semibold flex items-center gap-1.5">
+                                  <span className="w-2 h-2 rounded-full bg-amber-600" />
+                                  {t.otherBreakdown || 'Other'}:
+                                </span>
+                                <span className="font-bold">
+                                  {dish.otherCount} {t.portions || 'portions'}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Limit Progress Bar */}
                           {maxServings ? (
-                            <div className="mt-3">
-                              <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                            <div className="mt-2.5">
+                              <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
                                 <div
                                   className={`h-full rounded-full transition-all ${
                                     isSoldOut
                                       ? 'bg-rose-600'
-                                      : count >= maxServings * 0.8
+                                      : dish.totalCount >= maxServings * 0.8
                                         ? 'bg-amber-500'
                                         : 'bg-[#08795d]'
                                   }`}
                                   style={{ width: `${percentage}%` }}
                                 />
                               </div>
-                              <p className="mt-1 text-right text-[10px] font-medium text-slate-500">
-                                {percentage}% of limit ({Math.max(0, maxServings - count)} left)
+                              <p className="mt-1 text-right text-[10px] font-medium text-slate-400">
+                                {percentage}% ({Math.max(0, maxServings - dish.totalCount)} left)
                               </p>
                             </div>
                           ) : null}
                         </div>
 
-                        {matchingMenuItem && (
-                          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                            <span className="text-[11px] text-slate-400">Toggle Status</span>
+                        {/* Interactive Footer: View Students trigger & Toggle Sold Out button */}
+                        <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#08795d] group-hover:underline">
+                            <Users className="w-3.5 h-3.5" />
+                            <span>{t.viewStudents || 'View students'} ({dish.totalCount})</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </span>
+
+                          {matchingMenuItem && (
                             <button
                               type="button"
-                              className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition ${
+                              className={`text-xs font-bold px-2.5 py-1 rounded-xl border transition ${
                                 matchingMenuItem.is_sold_out
                                   ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
                                   : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
                               }`}
-                              onClick={() => handleToggleSoldOut(matchingMenuItem)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleSoldOut(matchingMenuItem);
+                              }}
                               disabled={togglingMenuId === matchingMenuItem.id}
                             >
-                              {matchingMenuItem.is_sold_out ? '✓ Mark Available' : '✕ Mark Sold Out'}
+                              {matchingMenuItem.is_sold_out ? '✓ Available' : '✕ Sold Out'}
                             </button>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -853,6 +953,228 @@ export default function ManagerDashboardPage() {
                   description={t.totalsAppearHere || 'Totals will appear here once students start ordering.'}
                 />
               )}
+            </div>
+          )}
+
+          {/* ======================================================== */}
+          {/* KITCHEN STUDENT LIST BOTTOM SHEET / PANEL                */}
+          {/* ======================================================== */}
+          {selectedKitchenDish && (
+            <div className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center">
+              {/* Backdrop */}
+              <div
+                className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+                onClick={() => setSelectedKitchenDish(null)}
+              />
+
+              {/* Bottom Sheet Container */}
+              <div className="relative w-full max-h-[85vh] md:max-w-xl md:rounded-2xl rounded-t-3xl bg-white shadow-2xl flex flex-col border border-slate-200 overflow-hidden animate-in slide-in-from-bottom duration-200 z-10">
+                {/* Mobile drag handle */}
+                <div className="md:hidden pt-2.5 pb-1 flex justify-center">
+                  <div className="w-12 h-1.5 bg-slate-300 rounded-full" />
+                </div>
+
+                {/* Sheet Header */}
+                <div className="p-4 sm:p-5 border-b border-slate-100 flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="p-1.5 rounded-lg bg-emerald-50 text-[#08795d]">
+                        <ChefHat className="w-4 h-4" />
+                      </span>
+                      <h3 className="text-base sm:text-lg font-extrabold text-slate-900">
+                        {selectedKitchenDish.itemName}
+                      </h3>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <strong className="text-slate-800">
+                        {selectedKitchenDish.totalCount} {t.portions || 'portions'}
+                      </strong>
+                      <span>•</span>
+                      <span className="text-purple-700 font-semibold">
+                        T22: {selectedKitchenDish.t22Count}
+                      </span>
+                      <span>•</span>
+                      <span className="text-sky-700 font-semibold">
+                        T34: {selectedKitchenDish.t34Count}
+                      </span>
+                      {selectedKitchenDish.otherCount > 0 && (
+                        <>
+                          <span>•</span>
+                          <span className="text-amber-700 font-semibold">
+                            Other: {selectedKitchenDish.otherCount}
+                          </span>
+                        </>
+                      )}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedKitchenDish(null)}
+                    className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                    aria-label="Close"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Search and Station Filter Row */}
+                <div className="p-4 bg-slate-50/80 border-b border-slate-100 space-y-3">
+                  <div className="relative">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={kitchenStudentSearch}
+                      onChange={(e) => setKitchenStudentSearch(e.target.value)}
+                      placeholder={t.searchStudents || 'Search by Student ID, name, or phone...'}
+                      className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-9 py-2 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:border-[#08795d] focus:outline-hidden focus:ring-1 focus:ring-[#08795d]"
+                    />
+                    {kitchenStudentSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setKitchenStudentSearch('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Station Filter Pills */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                    {['All', 'T22', 'T34', ...(selectedKitchenDish.otherCount > 0 ? ['Other'] : [])].map(
+                      (stationKey) => {
+                        const count =
+                          stationKey === 'All'
+                            ? selectedKitchenDish.totalCount
+                            : stationKey === 'T22'
+                              ? selectedKitchenDish.t22Count
+                              : stationKey === 'T34'
+                                ? selectedKitchenDish.t34Count
+                                : selectedKitchenDish.otherCount;
+                        const isActive = kitchenStationFilter === stationKey;
+
+                        return (
+                          <button
+                            key={stationKey}
+                            type="button"
+                            onClick={() => setKitchenStationFilter(stationKey)}
+                            className={`shrink-0 rounded-lg px-2.5 py-1 text-xs font-bold transition ${
+                              isActive
+                                ? 'bg-slate-900 text-white shadow-2xs'
+                                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                            }`}
+                          >
+                            {stationKey === 'All' ? t.allStations || 'All' : stationKey} ({count})
+                          </button>
+                        );
+                      },
+                    )}
+                  </div>
+                </div>
+
+                {/* Scrollable Student List */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-2.5 min-h-[160px] max-h-[50vh]">
+                  {(() => {
+                    const filteredOrders = selectedKitchenDish.orders.filter((order) => {
+                      if (kitchenStationFilter === 'T22' && order.user?.pickup_point !== 'T22')
+                        return false;
+                      if (kitchenStationFilter === 'T34' && order.user?.pickup_point !== 'T34')
+                        return false;
+                      if (
+                        kitchenStationFilter === 'Other' &&
+                        (order.user?.pickup_point === 'T22' || order.user?.pickup_point === 'T34')
+                      )
+                        return false;
+
+                      if (kitchenStudentSearch.trim()) {
+                        const q = kitchenStudentSearch.trim().toLowerCase();
+                        const idMatch = (order.user?.identity_number || '')
+                          .toLowerCase()
+                          .includes(q);
+                        const nameMatch = (order.user?.name || '').toLowerCase().includes(q);
+                        const phoneMatch = (order.user?.phone || '').includes(q);
+                        return idMatch || nameMatch || phoneMatch;
+                      }
+                      return true;
+                    });
+
+                    if (!filteredOrders.length) {
+                      return (
+                        <div className="py-10 text-center text-xs text-slate-400">
+                          {t.noStudentsMatching || 'No students matching your search or filter.'}
+                        </div>
+                      );
+                    }
+
+                    return filteredOrders.map((order) => {
+                      const pickup = order.user?.pickup_point;
+                      return (
+                        <div
+                          key={order.id}
+                          className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 flex items-center justify-between gap-3"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs font-black text-slate-900 bg-white border border-slate-300 px-2 py-0.5 rounded shadow-2xs tracking-wider">
+                                #{order.user?.identity_number || 'NO-ID'}
+                              </span>
+                              <h4 className="text-sm font-bold text-slate-900 truncate">
+                                {order.user?.name || 'Student'}
+                              </h4>
+                            </div>
+                            <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-1">
+                              <span>📞 {order.user?.phone || 'No phone'}</span>
+                              <span>•</span>
+                              <span
+                                className={`font-semibold ${
+                                  pickup === 'T22'
+                                    ? 'text-purple-700'
+                                    : pickup === 'T34'
+                                      ? 'text-sky-700'
+                                      : 'text-amber-700'
+                                }`}
+                              >
+                                📍 {pickup || 'Unassigned'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="shrink-0">
+                            {order.status === 'Arrived' ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                                {t.arrived || 'Arrived'}
+                              </span>
+                            ) : order.status === 'Packed' ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-bold text-sky-800">
+                                <span className="h-1.5 w-1.5 rounded-full bg-sky-600 animate-pulse" />
+                                {t.packed || 'Packed'}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800">
+                                <span className="h-1.5 w-1.5 rounded-full bg-amber-600" />
+                                {t.pending || 'In Kitchen'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+
+                {/* Sheet Footer */}
+                <div className="p-3 bg-slate-50 border-t border-slate-100 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedKitchenDish(null)}
+                    className="rounded-xl bg-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-300 transition"
+                  >
+                    {t.cancel || 'Close'}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
@@ -935,7 +1257,7 @@ export default function ManagerDashboardPage() {
                         <Truck className="mr-2 h-4 w-4" />
                         {dispatchingPickup === 'T22'
                           ? 'T22...'
-                          : !t22PendingArrivalCount && groupedOrders['T22']?.length > 0
+                          : !t22PendingArrivalCount && groupedOrders.T22?.length > 0
                             ? 'T22 Arrived ✓'
                             : `${t.markT22Arrived || 'Mark T22 as Arrived'} (${t22PendingArrivalCount})`}
                       </button>
@@ -953,7 +1275,7 @@ export default function ManagerDashboardPage() {
                         <Truck className="mr-2 h-4 w-4" />
                         {dispatchingPickup === 'T34'
                           ? 'T34...'
-                          : !t34PendingArrivalCount && groupedOrders['T34']?.length > 0
+                          : !t34PendingArrivalCount && groupedOrders.T34?.length > 0
                             ? 'T34 Arrived ✓'
                             : `${t.markT34Arrived || 'Mark T34 as Arrived'} (${t34PendingArrivalCount})`}
                       </button>
@@ -962,89 +1284,359 @@ export default function ManagerDashboardPage() {
                 </div>
               </div>
 
-              {/* Orders Grouped by Station (T22 & T34) */}
+              {/* Search & Station Switcher Bar */}
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-3.5 sm:p-4 shadow-xs space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  {/* Search Bar by Student ID, Name, or Food */}
+                  <div className="relative flex-1">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={dispatchSearchQuery}
+                      onChange={(e) => setDispatchSearchQuery(e.target.value)}
+                      placeholder={t.searchDispatch || 'Search orders by Student ID, name, or food...'}
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/60 pl-9 pr-9 py-2 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#08795d] focus:outline-hidden focus:ring-1 focus:ring-[#08795d]"
+                    />
+                    {dispatchSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setDispatchSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Station Quick Filter Chips */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto shrink-0 pb-0.5 sm:pb-0">
+                    {['All', 'T22', 'T34', ...(groupedOrders.Other?.length > 0 ? ['Other'] : [])].map(
+                      (stationKey) => {
+                        const count =
+                          stationKey === 'All'
+                            ? orders.length
+                            : stationKey === 'T22'
+                              ? groupedOrders.T22.length
+                              : stationKey === 'T34'
+                                ? groupedOrders.T34.length
+                                : groupedOrders.Other.length;
+                        const isActive = dispatchStationFilter === stationKey;
+
+                        return (
+                          <button
+                            key={stationKey}
+                            type="button"
+                            onClick={() => setDispatchStationFilter(stationKey)}
+                            className={`rounded-lg px-3 py-1.5 text-xs font-bold transition shrink-0 ${
+                              isActive
+                                ? 'bg-[#101426] text-white shadow-2xs'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            }`}
+                          >
+                            {stationKey === 'All' ? t.allStations || 'All Stations' : stationKey} ({count})
+                          </button>
+                        );
+                      },
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Orders Grouped into Clear T22 & T34 Sections */}
               <div className="grid gap-4 lg:grid-cols-2">
-                {['T22', 'T34'].map((pickupKey) => {
-                  const list = groupedOrders[pickupKey] || [];
-                  const arrivedCount = list.filter((o) => o.status === 'Arrived').length;
+                {/* Station T22 Section */}
+                {(dispatchStationFilter === 'All' || dispatchStationFilter === 'T22') && (
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs space-y-3">
+                    {(() => {
+                      const list = groupedOrders.T22 || [];
+                      const filteredList = list.filter((order) => {
+                        if (!dispatchSearchQuery.trim()) return true;
+                        const q = dispatchSearchQuery.trim().toLowerCase();
+                        const idMatch = (order.user?.identity_number || '').toLowerCase().includes(q);
+                        const nameMatch = (order.user?.name || '').toLowerCase().includes(q);
+                        const foodMatch = (order.menu?.name || '').toLowerCase().includes(q);
+                        const phoneMatch = (order.user?.phone || '').includes(q);
+                        return idMatch || nameMatch || foodMatch || phoneMatch;
+                      });
+                      const arrivedCount = list.filter((o) => o.status === 'Arrived').length;
 
-                  return (
-                    <div
-                      key={pickupKey}
-                      className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs space-y-3"
-                    >
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                        <div>
-                          <h3 className="text-base font-bold text-slate-900">
-                            {PICKUP_LABELS[pickupKey]}
-                          </h3>
-                          <p className="text-xs text-slate-500">
-                            {list.length} orders total • {arrivedCount} arrived
-                          </p>
-                        </div>
-                        <span
-                          className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                            arrivedCount === list.length && list.length > 0
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-slate-100 text-slate-700'
-                          }`}
-                        >
-                          {arrivedCount === list.length && list.length > 0
-                            ? 'All Arrived ✓'
-                            : `${list.length - arrivedCount} In Transit`}
-                        </span>
-                      </div>
-
-                      <div className="space-y-2.5 max-h-[500px] overflow-y-auto pr-1">
-                        {list.length ? (
-                          list.map((order) => (
-                            <div
-                              key={order.id}
-                              className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 flex items-center justify-between gap-3"
-                            >
-                              <div className="min-w-0 flex-1">
-                                <p className="text-xs font-bold text-slate-900 truncate">
-                                  {order.user?.name || 'Student'}
-                                </p>
-                                <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
-                                  <span>ID: <strong className="font-mono text-slate-700">{order.user?.identity_number}</strong></span>
-                                  <span>•</span>
-                                  <span>{order.user?.phone}</span>
-                                </div>
-                                <p className="text-xs font-semibold text-[#08795d] mt-1 truncate">
-                                  🍲 {order.menu?.name}
-                                </p>
+                      return (
+                        <>
+                          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-purple-600" />
+                                <h3 className="text-base font-bold text-slate-900">
+                                  {PICKUP_LABELS.T22}
+                                </h3>
                               </div>
-
-                              <div className="shrink-0">
-                                {order.status === 'Arrived' ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
-                                    {t.arrived || 'Arrived'}
-                                  </span>
-                                ) : order.status === 'Packed' ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-bold text-sky-800">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-sky-600 animate-pulse" />
-                                    {t.packed || 'Packed'}
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-amber-600" />
-                                    {t.pending || 'In Kitchen'}
-                                  </span>
-                                )}
-                              </div>
+                              <p className="text-xs text-slate-500 mt-0.5">
+                                {list.length} orders total • {arrivedCount} arrived
+                              </p>
                             </div>
-                          ))
-                        ) : (
-                          <div className="py-8 text-center text-xs text-slate-400">
-                            No orders for {pickupKey} yet.
+                            <span
+                              className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                                arrivedCount === list.length && list.length > 0
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : 'bg-purple-100 text-purple-800'
+                              }`}
+                            >
+                              {arrivedCount === list.length && list.length > 0
+                                ? 'All Arrived ✓'
+                                : `${list.length - arrivedCount} In Transit`}
+                            </span>
                           </div>
-                        )}
-                      </div>
+
+                          <div className="space-y-2.5 max-h-[520px] overflow-y-auto pr-1">
+                            {filteredList.length ? (
+                              filteredList.map((order) => (
+                                <div
+                                  key={order.id}
+                                  className="rounded-xl border border-slate-100 bg-slate-50/80 hover:bg-white hover:border-slate-200 p-3 space-y-2 transition shadow-2xs"
+                                >
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <span className="font-mono text-xs font-black text-slate-900 bg-white border border-slate-300 px-2 py-0.5 rounded shadow-2xs tracking-wider shrink-0">
+                                        #{order.user?.identity_number || 'NO-ID'}
+                                      </span>
+                                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                                        {order.user?.name || 'Student'}
+                                      </h4>
+                                    </div>
+
+                                    <div className="shrink-0">
+                                      {order.status === 'Arrived' ? (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
+                                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                                          {t.arrived || 'Arrived'}
+                                        </span>
+                                      ) : order.status === 'Packed' ? (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-bold text-sky-800">
+                                          <span className="h-1.5 w-1.5 rounded-full bg-sky-600 animate-pulse" />
+                                          {t.packed || 'Packed'}
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800">
+                                          <span className="h-1.5 w-1.5 rounded-full bg-amber-600" />
+                                          {t.pending || 'In Kitchen'}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/50">
+                                    <span className="font-bold text-[#08795d] truncate flex items-center gap-1">
+                                      <span>🍲</span>
+                                      <span>{order.menu?.name}</span>
+                                    </span>
+                                    <span className="text-[11px] text-slate-500 font-medium shrink-0">
+                                      📍 T22 • 📞 {order.user?.phone || '-'}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="py-8 text-center text-xs text-slate-400">
+                                {dispatchSearchQuery
+                                  ? t.noOrdersMatching || 'No orders match your search query.'
+                                  : 'No orders for T22 yet.'}
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {/* Station T34 Section */}
+                {(dispatchStationFilter === 'All' || dispatchStationFilter === 'T34') && (
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs space-y-3">
+                    {(() => {
+                      const list = groupedOrders.T34 || [];
+                      const filteredList = list.filter((order) => {
+                        if (!dispatchSearchQuery.trim()) return true;
+                        const q = dispatchSearchQuery.trim().toLowerCase();
+                        const idMatch = (order.user?.identity_number || '').toLowerCase().includes(q);
+                        const nameMatch = (order.user?.name || '').toLowerCase().includes(q);
+                        const foodMatch = (order.menu?.name || '').toLowerCase().includes(q);
+                        const phoneMatch = (order.user?.phone || '').includes(q);
+                        return idMatch || nameMatch || foodMatch || phoneMatch;
+                      });
+                      const arrivedCount = list.filter((o) => o.status === 'Arrived').length;
+
+                      return (
+                        <>
+                          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-sky-600" />
+                                <h3 className="text-base font-bold text-slate-900">
+                                  {PICKUP_LABELS.T34}
+                                </h3>
+                              </div>
+                              <p className="text-xs text-slate-500 mt-0.5">
+                                {list.length} orders total • {arrivedCount} arrived
+                              </p>
+                            </div>
+                            <span
+                              className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                                arrivedCount === list.length && list.length > 0
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : 'bg-sky-100 text-sky-800'
+                              }`}
+                            >
+                              {arrivedCount === list.length && list.length > 0
+                                ? 'All Arrived ✓'
+                                : `${list.length - arrivedCount} In Transit`}
+                            </span>
+                          </div>
+
+                          <div className="space-y-2.5 max-h-[520px] overflow-y-auto pr-1">
+                            {filteredList.length ? (
+                              filteredList.map((order) => (
+                                <div
+                                  key={order.id}
+                                  className="rounded-xl border border-slate-100 bg-slate-50/80 hover:bg-white hover:border-slate-200 p-3 space-y-2 transition shadow-2xs"
+                                >
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <span className="font-mono text-xs font-black text-slate-900 bg-white border border-slate-300 px-2 py-0.5 rounded shadow-2xs tracking-wider shrink-0">
+                                        #{order.user?.identity_number || 'NO-ID'}
+                                      </span>
+                                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                                        {order.user?.name || 'Student'}
+                                      </h4>
+                                    </div>
+
+                                    <div className="shrink-0">
+                                      {order.status === 'Arrived' ? (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
+                                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                                          {t.arrived || 'Arrived'}
+                                        </span>
+                                      ) : order.status === 'Packed' ? (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-bold text-sky-800">
+                                          <span className="h-1.5 w-1.5 rounded-full bg-sky-600 animate-pulse" />
+                                          {t.packed || 'Packed'}
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800">
+                                          <span className="h-1.5 w-1.5 rounded-full bg-amber-600" />
+                                          {t.pending || 'In Kitchen'}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/50">
+                                    <span className="font-bold text-[#08795d] truncate flex items-center gap-1">
+                                      <span>🍲</span>
+                                      <span>{order.menu?.name}</span>
+                                    </span>
+                                    <span className="text-[11px] text-slate-500 font-medium shrink-0">
+                                      📍 T34 • 📞 {order.user?.phone || '-'}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="py-8 text-center text-xs text-slate-400">
+                                {dispatchSearchQuery
+                                  ? t.noOrdersMatching || 'No orders match your search query.'
+                                  : 'No orders for T34 yet.'}
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {/* Unassigned / Other Orders Section (Ensures no order is lost if pickup_point is unexpected or missing) */}
+                {groupedOrders.Other?.length > 0 &&
+                  (dispatchStationFilter === 'All' || dispatchStationFilter === 'Other') && (
+                    <div className="lg:col-span-2 rounded-2xl border border-amber-200 bg-amber-50/40 p-4 sm:p-5 shadow-xs space-y-3">
+                      {(() => {
+                        const list = groupedOrders.Other;
+                        const filteredList = list.filter((order) => {
+                          if (!dispatchSearchQuery.trim()) return true;
+                          const q = dispatchSearchQuery.trim().toLowerCase();
+                          const idMatch = (order.user?.identity_number || '').toLowerCase().includes(q);
+                          const nameMatch = (order.user?.name || '').toLowerCase().includes(q);
+                          const foodMatch = (order.menu?.name || '').toLowerCase().includes(q);
+                          const phoneMatch = (order.user?.phone || '').includes(q);
+                          return idMatch || nameMatch || foodMatch || phoneMatch;
+                        });
+
+                        return (
+                          <>
+                            <div className="flex items-center justify-between border-b border-amber-200/70 pb-3">
+                              <div className="flex items-center gap-2">
+                                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+                                <div>
+                                  <h3 className="text-base font-bold text-amber-950">
+                                    {t.unassignedStation || 'Unassigned / Other Pickup Locations'}
+                                  </h3>
+                                  <p className="text-xs text-amber-800">
+                                    These orders have non-standard pickup locations. Kept visible here so no meal is lost.
+                                  </p>
+                                </div>
+                              </div>
+                              <span className="rounded-full bg-amber-200/80 px-2.5 py-0.5 text-xs font-bold text-amber-900">
+                                {list.length} orders
+                              </span>
+                            </div>
+
+                            <div className="space-y-2.5 max-h-[400px] overflow-y-auto pr-1">
+                              {filteredList.length ? (
+                                filteredList.map((order) => (
+                                  <div
+                                    key={order.id}
+                                    className="rounded-xl border border-amber-200 bg-white p-3 space-y-2 shadow-2xs"
+                                  >
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <span className="font-mono text-xs font-black text-slate-900 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded shadow-2xs tracking-wider shrink-0">
+                                          #{order.user?.identity_number || 'NO-ID'}
+                                        </span>
+                                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                                          {order.user?.name || 'Student'}
+                                        </h4>
+                                      </div>
+
+                                      <div className="shrink-0">
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800">
+                                          {order.status}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between text-xs pt-1 border-t border-amber-100">
+                                      <span className="font-bold text-[#08795d] truncate flex items-center gap-1">
+                                        <span>🍲</span>
+                                        <span>{order.menu?.name}</span>
+                                      </span>
+                                      <span className="text-[11px] text-amber-900 font-medium shrink-0">
+                                        📍 {order.user?.pickup_point || 'Not specified'} • 📞 {order.user?.phone || '-'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="py-6 text-center text-xs text-amber-800/80">
+                                  {dispatchSearchQuery
+                                    ? t.noOrdersMatching || 'No orders match your search query.'
+                                    : 'No unassigned orders.'}
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
-                  );
-                })}
+                  )}
               </div>
             </div>
           )}
