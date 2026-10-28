@@ -714,66 +714,43 @@ export default function ManagerDashboardPage() {
             </div>
           )}
 
-          {/* Quick Stats Overview Strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {/* Total Orders for Active Window */}
-            <div className="rounded-2xl bg-white border border-slate-200/80 p-3.5 shadow-xs">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                {focusedMeal} Orders
-              </span>
-              <p className="text-2xl font-black text-slate-900 mt-0.5">{orders.length}</p>
-              <span className="text-[10px] text-emerald-700 font-semibold mt-0.5 block">
-                Active Meal Cycle
-              </span>
-            </div>
-
-            {/* Pending Packing */}
-            <div className="rounded-2xl bg-white border border-slate-200/80 p-3.5 shadow-xs">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                Pending Packing
-              </span>
-              <p className="text-2xl font-black text-sky-700 mt-0.5">{pendingOrdersCount}</p>
-              <span className="text-[10px] text-slate-500 font-medium mt-0.5 block">
-                In Kitchen Prep
-              </span>
-            </div>
-
-            {/* In-Transit to Stations */}
-            <div className="rounded-2xl bg-white border border-slate-200/80 p-3.5 shadow-xs">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                In Minibus Transit
-              </span>
-              <p className="text-2xl font-black text-emerald-800 mt-0.5">
-                {t22PendingArrivalCount + t34PendingArrivalCount}
-              </p>
-              <span className="text-[10px] text-slate-500 font-medium mt-0.5 block">
-                T22: {t22PendingArrivalCount} • T34: {t34PendingArrivalCount}
-              </span>
-            </div>
-
-            {/* Pending Subscriptions */}
-            <div className="rounded-2xl bg-white border border-slate-200/80 p-3.5 shadow-xs">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                Pending Proofs
-              </span>
-              <p className="text-2xl font-black text-amber-700 mt-0.5">
-                {pendingSubscriptions.length}
-              </p>
-              <span className="text-[10px] text-amber-800 font-medium mt-0.5 block">
-                Awaiting Verification
-              </span>
-            </div>
-          </div>
-
-          {/* Consolidated Meal Window Status Bar */}
-          <MealStatusCard mealContext={mealContext} />
-
           {/* ======================================================== */}
           {/* TAB 1: KITCHEN VIEW (Order Quantities & Prep Limits)     */}
           {/* ======================================================== */}
           {activeTab === 'kitchen' && (
             <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              {/* Quick Stats: Exactly Two Cards side-by-side on mobile and desktop */}
+              <div className="grid grid-cols-2 gap-3">
+                {/* 1. Meal Orders */}
+                <div className="rounded-2xl bg-white border border-slate-200/80 p-3 sm:p-3.5 shadow-xs">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block truncate">
+                    {focusedMeal ? `${focusedMeal} Orders` : 'Total Orders'}
+                  </span>
+                  <p className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5">{orders.length}</p>
+                  <span className="text-[10px] text-emerald-700 font-semibold mt-0.5 block truncate">
+                    Active Meal Cycle
+                  </span>
+                </div>
+
+                {/* 2. Pending Proofs */}
+                <div className="rounded-2xl bg-white border border-slate-200/80 p-3 sm:p-3.5 shadow-xs">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block truncate">
+                    Pending Proofs
+                  </span>
+                  <p className="text-xl sm:text-2xl font-black text-amber-700 mt-0.5">
+                    {pendingSubscriptions.length}
+                  </p>
+                  <span className="text-[10px] text-amber-800 font-medium mt-0.5 block truncate">
+                    Awaiting Verification
+                  </span>
+                </div>
+              </div>
+
+              {/* Compact Meal Window Status Bar */}
+              <MealStatusCard mealContext={mealContext} compact />
+
+              {/* Kitchen Section Heading */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
                 <div>
                   <h2 className="text-lg sm:text-xl font-extrabold text-[#101426] tracking-tight">
                     {focusedMeal ? formatTotalsTitle(language, t, focusedMeal) : t.kitchenView}
@@ -799,16 +776,13 @@ export default function ManagerDashboardPage() {
                   <span>Loading kitchen totals...</span>
                 </div>
               ) : kitchenDishes.length > 0 ? (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
                   {kitchenDishes.map((dish) => {
                     const matchingMenuItem = dish.menuItem;
                     const maxServings = matchingMenuItem?.max_servings;
                     const isSoldOut = Boolean(
                       matchingMenuItem?.is_sold_out || (maxServings && dish.totalCount >= maxServings)
                     );
-                    const percentage = maxServings
-                      ? Math.min(100, Math.round((dish.totalCount / maxServings) * 100))
-                      : null;
 
                     return (
                       <div
@@ -818,130 +792,79 @@ export default function ManagerDashboardPage() {
                           setKitchenStudentSearch('');
                           setKitchenStationFilter('All');
                         }}
-                        className={`rounded-2xl border p-4 bg-white shadow-xs transition flex flex-col justify-between cursor-pointer group active:scale-[0.99] ${
+                        className={`rounded-xl border p-3 sm:p-3.5 bg-white shadow-2xs transition-all flex flex-col justify-between cursor-pointer group active:scale-[0.99] ${
                           isSoldOut
                             ? 'border-rose-200 bg-rose-50/20 hover:border-rose-300'
-                            : 'border-slate-200/80 hover:border-[#08795d]/60 hover:shadow-md'
+                            : 'border-slate-200/80 hover:border-[#08795d]/60 hover:shadow-xs'
                         }`}
                       >
-                        <div>
-                          {/* Card Header: Total Portions & Availability Status */}
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                Required Portions
-                              </span>
-                              <div className="flex items-baseline gap-1 mt-0.5">
-                                <span className="text-3xl font-black text-slate-900">{dish.totalCount}x</span>
-                                {maxServings && (
-                                  <span className="text-xs font-semibold text-slate-400">
-                                    / {maxServings} max
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
+                        {/* Top Line: Food Name on left, Total Required Portions on right */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <h3 className="text-sm sm:text-base font-extrabold text-slate-900 truncate group-hover:text-[#08795d] transition">
+                              {dish.itemName}
+                            </h3>
                             {isSoldOut ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-700">
-                                <Ban className="w-3 h-3" />
+                              <span className="shrink-0 inline-flex items-center gap-0.5 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+                                <Ban className="w-2.5 h-2.5" />
                                 {t.soldOut || 'Sold Out'}
                               </span>
                             ) : maxServings && dish.totalCount >= maxServings * 0.8 ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800">
+                              <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
                                 Near Limit
                               </span>
-                            ) : (
-                              <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
-                                Available
+                            ) : null}
+                          </div>
+
+                          <div className="text-right shrink-0">
+                            <span className="text-sm sm:text-base font-black text-slate-900">
+                              {dish.totalCount} {t.portions || 'portions'}
+                            </span>
+                            {maxServings && (
+                              <span className="text-[10px] text-slate-400 block -mt-0.5">
+                                / {maxServings} max
                               </span>
                             )}
                           </div>
-
-                          {/* Food Item Headline */}
-                          <h3 className="text-base font-bold text-slate-900 mt-2.5 group-hover:text-[#08795d] transition">
-                            {dish.itemName} — {dish.totalCount} {t.portions || 'portions'}
-                          </h3>
-
-                          {/* Pickup Location Breakdown (T22 and T34) */}
-                          <div className="mt-2.5 rounded-xl bg-slate-50 border border-slate-100 p-2.5 space-y-1 text-xs">
-                            <div className="flex items-center justify-between">
-                              <span className="font-semibold text-slate-700 flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-purple-600" />
-                                T22:
-                              </span>
-                              <span className="font-bold text-slate-900">
-                                {dish.t22Count} {t.portions || 'portions'}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="font-semibold text-slate-700 flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-sky-600" />
-                                T34:
-                              </span>
-                              <span className="font-bold text-slate-900">
-                                {dish.t34Count} {t.portions || 'portions'}
-                              </span>
-                            </div>
-                            {dish.otherCount > 0 && (
-                              <div className="flex items-center justify-between text-amber-800">
-                                <span className="font-semibold flex items-center gap-1.5">
-                                  <span className="w-2 h-2 rounded-full bg-amber-600" />
-                                  {t.otherBreakdown || 'Other'}:
-                                </span>
-                                <span className="font-bold">
-                                  {dish.otherCount} {t.portions || 'portions'}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Limit Progress Bar */}
-                          {maxServings ? (
-                            <div className="mt-2.5">
-                              <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full transition-all ${
-                                    isSoldOut
-                                      ? 'bg-rose-600'
-                                      : dish.totalCount >= maxServings * 0.8
-                                        ? 'bg-amber-500'
-                                        : 'bg-[#08795d]'
-                                  }`}
-                                  style={{ width: `${percentage}%` }}
-                                />
-                              </div>
-                              <p className="mt-1 text-right text-[10px] font-medium text-slate-400">
-                                {percentage}% ({Math.max(0, maxServings - dish.totalCount)} left)
-                              </p>
-                            </div>
-                          ) : null}
                         </div>
 
-                        {/* Interactive Footer: View Students trigger & Toggle Sold Out button */}
-                        <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#08795d] group-hover:underline">
-                            <Users className="w-3.5 h-3.5" />
-                            <span>{t.viewStudents || 'View students'} ({dish.totalCount})</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </span>
+                        {/* Bottom Line: T22 & T34 breakdown on left, Sold-Out toggle & tap arrow (›) on right */}
+                        <div className="mt-2.5 pt-2 border-t border-slate-100/90 flex items-center justify-between gap-2 text-xs">
+                          <div className="flex items-center gap-1.5 text-slate-600 font-medium text-xs truncate">
+                            <span className="text-purple-700 font-bold">T22: {dish.t22Count}</span>
+                            <span className="text-slate-300">·</span>
+                            <span className="text-sky-700 font-bold">T34: {dish.t34Count}</span>
+                            {dish.otherCount > 0 && (
+                              <>
+                                <span className="text-slate-300">·</span>
+                                <span className="text-amber-700 font-bold">Other: {dish.otherCount}</span>
+                              </>
+                            )}
+                          </div>
 
-                          {matchingMenuItem && (
-                            <button
-                              type="button"
-                              className={`text-xs font-bold px-2.5 py-1 rounded-xl border transition ${
-                                matchingMenuItem.is_sold_out
-                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
-                                  : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
-                              }`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleToggleSoldOut(matchingMenuItem);
-                              }}
-                              disabled={togglingMenuId === matchingMenuItem.id}
-                            >
-                              {matchingMenuItem.is_sold_out ? '✓ Available' : '✕ Sold Out'}
-                            </button>
-                          )}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {matchingMenuItem && (
+                              <button
+                                type="button"
+                                className={`text-[11px] font-bold px-2 py-0.5 rounded-lg border transition ${
+                                  matchingMenuItem.is_sold_out
+                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+                                    : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                                }`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleSoldOut(matchingMenuItem);
+                                }}
+                                disabled={togglingMenuId === matchingMenuItem.id}
+                              >
+                                {matchingMenuItem.is_sold_out ? '✓ Available' : '✕ Sold Out'}
+                              </button>
+                            )}
+
+                            <span className="text-slate-400 group-hover:text-[#08795d] transition flex items-center">
+                              <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+                            </span>
+                          </div>
                         </div>
                       </div>
                     );

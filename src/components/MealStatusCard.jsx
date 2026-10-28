@@ -3,12 +3,84 @@ import { useLanguage } from '../context/LanguageContext.jsx';
 import { formatMealWindow } from '../lib/time.js';
 import { translateMealLabel } from '../lib/translations.js';
 
-export default function MealStatusCard({ mealContext, pickupPoint }) {
+export default function MealStatusCard({ mealContext, pickupPoint, compact = false }) {
   const { t } = useLanguage();
   const mealLabel =
     translateMealLabel(t, mealContext.focusMeal) || mealContext.focusMeal || 'Meal';
   const isOrderingOpen = mealContext.isOrderingOpen;
   const isUpcoming = !isOrderingOpen && mealContext.upcomingMeal;
+
+  if (compact) {
+    return (
+      <div
+        className={`rounded-2xl p-3 sm:p-3.5 transition-all font-campus border ${
+          isOrderingOpen
+            ? 'bg-gradient-to-r from-[#f7f6ea]/90 via-white to-[#edf6ee]/90 border-emerald-300/80 shadow-2xs'
+            : isUpcoming
+              ? 'bg-gradient-to-r from-amber-50/70 via-white to-amber-50/40 border-amber-200/80 shadow-2xs'
+              : 'bg-slate-50 border-slate-200/80'
+        }`}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          {/* Left: Status Badge, Meal Name & Configured Hours */}
+          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap min-w-0">
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                isOrderingOpen
+                  ? 'bg-[#08795d] text-white shadow-2xs'
+                  : isUpcoming
+                    ? 'bg-amber-100 text-amber-800'
+                    : 'bg-slate-200 text-slate-700'
+              }`}
+            >
+              {isOrderingOpen && (
+                <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" aria-hidden="true" />
+              )}
+              {isOrderingOpen
+                ? t.orderingOpen || 'ORDERING OPEN'
+                : isUpcoming
+                  ? t.upcomingMeal || 'UPCOMING MEAL'
+                  : 'ORDERING CLOSED'}
+            </span>
+
+            <span className="text-base font-extrabold text-[#101426] tracking-tight">
+              {mealLabel}
+            </span>
+
+            <span className="text-xs text-slate-500 font-medium inline-flex items-center gap-1">
+              <Clock3 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span>{mealContext.focusMeal ? formatMealWindow(mealContext.focusMeal) : ''}</span>
+            </span>
+
+            {mealContext.windowLabel && (
+              <span className="text-xs text-slate-500 font-normal hidden lg:inline">
+                • {mealContext.windowLabel}
+              </span>
+            )}
+          </div>
+
+          {/* Right: Local Time & Optional Pickup Point */}
+          <div className="flex items-center gap-2.5 text-xs shrink-0 self-end sm:self-auto">
+            <div className="flex items-center gap-1 text-slate-600">
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">
+                {t.localTime}:
+              </span>
+              <span className="text-xs sm:text-sm font-bold text-slate-900">
+                {mealContext.currentTimeLabel}
+              </span>
+            </div>
+
+            {pickupPoint && (
+              <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#08795d] bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                <MapPin className="w-3 h-3 text-[#08795d]" />
+                <span>Bldg {pickupPoint}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
