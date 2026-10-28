@@ -127,8 +127,6 @@ export default function AuthPage() {
       ? 'ግባ'
       : 'Login';
 
-  const isFormValid = phone.trim().length >= 9 && password.trim().length > 0;
-
   return (
     <div className="cf-shell-wrapper auth-page">
       {/* Decorative mesob emblem + arc, kept out of layout and tab order */}
@@ -302,7 +300,7 @@ export default function AuthPage() {
               disabled={
                 loading ||
                 !isSupabaseConfigured ||
-                (isSignup && (!isFormValid || !hasAcceptedPolicies))
+                (isSignup && !hasAcceptedPolicies)
               }
               aria-busy={loading}
             >

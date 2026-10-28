@@ -645,36 +645,22 @@ export default function ManagerDashboardPage() {
       <div className="md:pl-64 flex flex-col min-h-screen">
         {/* COMPACT TOP HEADER */}
         <header className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-slate-200/70 px-4 py-3 sm:px-6">
-          <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
-            {/* Left: Reorganized 2-line identity and greeting layout */}
-            <div className="min-w-0 flex-1">
-              {/* Line 1: Main Dashboard Heading */}
-              <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight truncate">
-                  {t.managerDash || 'Cafeteria Manager'}
-                </h1>
-                <span className="text-[10px] font-bold uppercase text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded shrink-0 md:hidden">
-                  Ops
+          <div className="mx-auto grid min-h-[109px] w-full min-w-0 max-w-6xl grid-cols-[minmax(0,1fr)_auto] content-between gap-y-2 sm:min-h-0 sm:items-center sm:content-normal">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <img src="/mesob-symbol.svg" alt="" className="h-8 w-auto shrink-0" />
+              <h1 className="flex min-w-0 flex-col leading-none">
+                <span className="text-base font-extrabold tracking-tight text-[#075b49]">MESOB</span>
+                <span className="mt-0.5 text-[7px] font-semibold uppercase tracking-[0.24em] text-[#c99a35]">
+                  Delivery
                 </span>
-                {profile?.name && (
-                  <span className="text-slate-400 font-normal hidden sm:inline">• {profile.name}</span>
-                )}
-              </div>
-
-              {/* Line 2: Manager name and greeting placed neatly underneath the heading */}
-              <p className="text-xs text-slate-500 font-medium truncate mt-0.5 flex items-center gap-1">
-                <span>{t.hello}</span>
-                <span className="text-[#08795d] font-semibold">{profile?.name || 'Manager'}</span>
-                <span>👋</span>
-              </p>
+              </h1>
             </div>
 
-            {/* Right: Quick Action Buttons & Top-Right Mobile Logout */}
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex min-w-0 flex-nowrap items-center justify-end gap-1 sm:gap-2">
               <button
                 type="button"
                 onClick={() => loadDashboard(false)}
-                className="inline-flex items-center justify-center p-2 sm:px-3 sm:py-1.5 min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-xs transition cursor-pointer"
+                className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 cursor-pointer sm:min-w-0 sm:px-3 sm:py-1.5"
                 title={t.refresh || 'Refresh'}
                 aria-label={t.refresh || 'Refresh'}
               >
@@ -682,22 +668,25 @@ export default function ManagerDashboardPage() {
                 <span className="hidden sm:inline ml-1.5">{t.refresh || 'Refresh'}</span>
               </button>
 
-              <div className="md:hidden">
-                <LanguageToggle />
-              </div>
+              <LanguageToggle className="min-h-[40px] min-w-[56px] justify-center" />
 
-              {/* Mobile Top-Right Corner Icon-Only Logout Button */}
               <button
                 type="button"
                 onClick={handleSignOut}
                 disabled={isLoggingOut}
-                className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50/80 hover:bg-rose-100 text-rose-600 shadow-xs transition md:hidden cursor-pointer disabled:opacity-50 shrink-0"
+                className="inline-flex h-10 w-10 min-h-[40px] min-w-[40px] shrink-0 items-center justify-center rounded-xl border border-rose-200 bg-rose-50/80 text-rose-600 shadow-xs transition hover:bg-rose-100 cursor-pointer disabled:opacity-50"
                 title={t.signOut || 'Log out'}
-                aria-label="Log out"
+                aria-label={t.signOut || 'Log out'}
               >
                 <LogOut className="w-4 h-4 text-rose-600 shrink-0" />
               </button>
             </div>
+
+            <p className="col-span-2 min-w-0 text-sm font-medium text-slate-500">
+              <span>{t.hello}</span>{' '}
+              <span className="break-words font-semibold text-[#08795d]">{profile?.name || 'Manager'}</span>
+              {' '}👋
+            </p>
           </div>
         </header>
 
