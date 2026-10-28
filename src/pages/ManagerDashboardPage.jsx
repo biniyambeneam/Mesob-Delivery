@@ -103,6 +103,8 @@ export default function ManagerDashboardPage() {
   const [kitchenStationFilter, setKitchenStationFilter] = useState('All');
   const [dispatchSearchQuery, setDispatchSearchQuery] = useState('');
   const [dispatchStationFilter, setDispatchStationFilter] = useState('All');
+  const [showPackAllConfirm, setShowPackAllConfirm] = useState(false);
+  const [packAllError, setPackAllError] = useState('');
 
   const focusedMeal = mealContext.focusMeal;
 
@@ -301,18 +303,19 @@ export default function ManagerDashboardPage() {
     return (groupedOrders['T34'] || []).filter((o) => o.status !== 'Arrived').length;
   }, [groupedOrders]);
 
-  const handleMarkAllPacked = async () => {
+  const handleConfirmPackAll = async () => {
     const pendingOrderIds = orders
       .filter((order) => order.status === 'Pending')
       .map((order) => order.id);
 
     if (!pendingOrderIds.length) {
+      setShowPackAllConfirm(false);
       return;
     }
 
     try {
       setPackingAllOrders(true);
-      setError('');
+      setPackAllError('');
 
       const { error: updateError } = await supabase
         .from('orders')
@@ -324,8 +327,9 @@ export default function ManagerDashboardPage() {
       }
 
       await loadDashboard(true);
+      setShowPackAllConfirm(false);
     } catch (err) {
-      setError(err.message || 'Unable to mark all orders as packed.');
+      setPackAllError(err.message || 'Unable to mark all orders as packed. Please retry.');
     } finally {
       setPackingAllOrders(false);
     }
@@ -1106,106 +1110,120 @@ export default function ManagerDashboardPage() {
           {/* ======================================================== */}
           {activeTab === 'packing' && (
             <div className="space-y-5">
-              {/* Central Dispatch Operational Controller */}
-              <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                  {/* Step 1: Mark All as Packed */}
-                  <div className="flex-1 space-y-2">
+              {/* Top Action Card: All Orders Packed */}
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-800 text-xs font-extrabold flex items-center justify-center">
-                        1
+                      <span className="w-7 h-7 rounded-lg bg-sky-100 text-sky-800 text-xs font-extrabold flex items-center justify-center shrink-0">
+                        <Package className="w-4 h-4" />
                       </span>
                       <h3 className="text-sm sm:text-base font-bold text-slate-900">
-                        {isAmharic ? 'የማሸጊያ እና ጉዞ ቁጥጥር' : 'Minibus Departure (All Orders)'}
+                        {t.packingAndDispatch || 'Packing & Dispatch'}
                       </h3>
                     </div>
-                    <p className="text-xs text-slate-500 leading-relaxed">
-                      {isAmharic
-                        ? 'ምግቦች በሙሉ ተዘጋጅተው በሚኒባሱ ሲጫኑ "ሁሉንም ታሽጓል በል" የሚለውን ይጫኑ።'
-                        : 'Once all dishes are packed and loaded into the delivery minibus, mark all as packed.'}
+                    <p className="text-xs text-slate-500 leading-relaxed max-w-xl">
+                      {t.packingAndDispatchDesc ||
+                        'Mark all orders as packed when preparation and packing are complete.'}
                     </p>
-                    <div className="pt-1">
-                      <button
-                        type="button"
-                        onClick={handleMarkAllPacked}
-                        disabled={pendingOrdersCount === 0 || packingAllOrders}
-                        className={`inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-xs sm:text-sm font-bold shadow-xs transition-all ${
-                          pendingOrdersCount === 0
-                            ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
-                            : 'bg-sky-600 text-white hover:bg-sky-700 active:scale-[0.98]'
-                        }`}
-                      >
-                        <Package className="mr-2 h-4 w-4" />
-                        {packingAllOrders
-                          ? isAmharic
-                            ? 'በማሸግ ላይ...'
-                            : 'Packing All Orders...'
-                          : pendingOrdersCount === 0
-                            ? isAmharic
-                              ? 'ሁሉም ታሽጓል ✓'
-                              : 'All Orders Packed ✓'
-                            : `${t.markAllPacked || 'Mark All as Packed'} (${pendingOrdersCount})`}
-                      </button>
-                    </div>
                   </div>
+                  <div className="shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPackAllError('');
+                        setShowPackAllConfirm(true);
+                      }}
+                      disabled={pendingOrdersCount === 0 || packingAllOrders}
+                      className={`w-full sm:w-auto inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-xs sm:text-sm font-bold shadow-xs transition-all ${
+                        pendingOrdersCount === 0
+                          ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                          : 'bg-sky-600 text-white hover:bg-sky-700 active:scale-[0.98]'
+                      }`}
+                    >
+                      <Package className="mr-2 h-4 w-4" />
+                      {pendingOrdersCount === 0
+                        ? isAmharic
+                          ? 'ሁሉም ታሽጓል ✓'
+                          : 'All Orders Packed ✓'
+                        : `${isAmharic ? 'ሁሉንም ታሽጓል በል' : 'All Orders Packed'} (${pendingOrdersCount})`}
+                    </button>
+                  </div>
+                </div>
+              </div>
 
-                  <div className="hidden lg:block h-16 w-px bg-slate-200" />
-
-                  {/* Step 2: Mark Station Arrival */}
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 text-xs font-extrabold flex items-center justify-center">
-                        2
-                      </span>
-                      <h3 className="text-sm sm:text-base font-bold text-slate-900">
-                        {isAmharic ? 'የመድረሻ ማሳወቂያ በህንፃ' : 'Arrival Notice by Station'}
-                      </h3>
+              {/* Confirmation Dialog: Mark All Orders as Packed */}
+              {showPackAllConfirm && (
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="confirm-pack-title"
+                >
+                  <div className="w-full max-w-md rounded-2xl bg-white p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-sky-50 border border-sky-200 text-sky-700 flex items-center justify-center shrink-0">
+                        <Package className="w-5 h-5" />
+                      </div>
+                      <div className="space-y-1">
+                        <h3 id="confirm-pack-title" className="text-base font-bold text-slate-900">
+                          {t.confirmPackAllTitle || 'Mark All Orders as Packed?'}
+                        </h3>
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                          {t.confirmPackAllMessage ||
+                            'This will mark all applicable orders from both T22 and T34 as packed. Students will be able to see the updated order status. Continue?'}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-xs text-slate-500 leading-relaxed">
-                      {isAmharic
-                        ? 'ሚኒባሱ እያንዳንዱ ህንፃ ሲደርስ "ደርሷል" ይጫኑ፤ ተማሪዎች ወዲያውኑ የድምፅ ማሳወቂያ ይደርሳቸዋል።'
-                        : 'When reaching each building, click to trigger the in-app arrival alert and sound chime.'}
-                    </p>
-                    <div className="flex flex-wrap gap-2.5 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => handlePickupArrival('T22')}
-                        disabled={!t22PendingArrivalCount || dispatchingPickup === 'T22'}
-                        className={`inline-flex items-center justify-center rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold transition-all shadow-xs ${
-                          !t22PendingArrivalCount
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-not-allowed'
-                            : 'bg-[#08795d] text-white hover:bg-[#07684f] active:scale-[0.98]'
-                        }`}
-                      >
-                        <Truck className="mr-2 h-4 w-4" />
-                        {dispatchingPickup === 'T22'
-                          ? 'T22...'
-                          : !t22PendingArrivalCount && groupedOrders.T22?.length > 0
-                            ? 'T22 Arrived ✓'
-                            : `${t.markT22Arrived || 'Mark T22 as Arrived'} (${t22PendingArrivalCount})`}
-                      </button>
 
+                    <div className="rounded-xl bg-slate-50 border border-slate-200/80 p-3 text-xs text-slate-600 space-y-1.5">
+                      <div className="flex justify-between font-semibold text-slate-800">
+                        <span>{isAmharic ? 'የሚታሸጉ ትዕዛዞች ድምር:' : 'Orders to be marked packed:'}</span>
+                        <span className="font-bold text-sky-700">{pendingOrdersCount} orders</span>
+                      </div>
+                      <div className="flex justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-200/60">
+                        <span>T22: {(groupedOrders.T22 || []).filter((o) => o.status === 'Pending').length} pending</span>
+                        <span>T34: {(groupedOrders.T34 || []).filter((o) => o.status === 'Pending').length} pending</span>
+                      </div>
+                    </div>
+
+                    {packAllError && (
+                      <div className="rounded-xl bg-rose-50 border border-rose-200 p-2.5 text-xs text-rose-700">
+                        {packAllError}
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-end gap-2.5 pt-2">
                       <button
                         type="button"
-                        onClick={() => handlePickupArrival('T34')}
-                        disabled={!t34PendingArrivalCount || dispatchingPickup === 'T34'}
-                        className={`inline-flex items-center justify-center rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold transition-all shadow-xs ${
-                          !t34PendingArrivalCount
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-not-allowed'
-                            : 'bg-[#08795d] text-white hover:bg-[#07684f] active:scale-[0.98]'
-                        }`}
+                        disabled={packingAllOrders}
+                        onClick={() => {
+                          setPackAllError('');
+                          setShowPackAllConfirm(false);
+                        }}
+                        className="rounded-xl px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition disabled:opacity-50"
                       >
-                        <Truck className="mr-2 h-4 w-4" />
-                        {dispatchingPickup === 'T34'
-                          ? 'T34...'
-                          : !t34PendingArrivalCount && groupedOrders.T34?.length > 0
-                            ? 'T34 Arrived ✓'
-                            : `${t.markT34Arrived || 'Mark T34 as Arrived'} (${t34PendingArrivalCount})`}
+                        {t.cancel || 'Cancel'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={packingAllOrders}
+                        onClick={handleConfirmPackAll}
+                        className="inline-flex items-center justify-center rounded-xl bg-sky-600 px-4 py-2 text-xs font-bold text-white hover:bg-sky-700 transition disabled:opacity-50 shadow-xs"
+                      >
+                        {packingAllOrders ? (
+                          <>
+                            <RefreshCw className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                            {isAmharic ? 'በማሸግ ላይ...' : 'Packing All Orders...'}
+                          </>
+                        ) : (
+                          t.confirmAndPackAll || 'Confirm & Pack All'
+                        )}
                       </button>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Search & Station Switcher Bar */}
               <div className="rounded-2xl border border-slate-200/90 bg-white p-3.5 sm:p-4 shadow-xs space-y-3">
@@ -1269,7 +1287,7 @@ export default function ManagerDashboardPage() {
               <div className="grid gap-4 lg:grid-cols-2">
                 {/* Station T22 Section */}
                 {(dispatchStationFilter === 'All' || dispatchStationFilter === 'T22') && (
-                  <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs space-y-3">
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs space-y-3 flex flex-col justify-between">
                     {(() => {
                       const list = groupedOrders.T22 || [];
                       const filteredList = list.filter((order) => {
@@ -1285,86 +1303,112 @@ export default function ManagerDashboardPage() {
 
                       return (
                         <>
-                          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full bg-purple-600" />
-                                <h3 className="text-base font-bold text-slate-900">
-                                  {PICKUP_LABELS.T22}
-                                </h3>
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="w-2.5 h-2.5 rounded-full bg-purple-600" />
+                                  <h3 className="text-base font-bold text-slate-900">
+                                    {PICKUP_LABELS.T22}
+                                  </h3>
+                                </div>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                  {list.length} orders total • {arrivedCount} arrived
+                                </p>
                               </div>
-                              <p className="text-xs text-slate-500 mt-0.5">
-                                {list.length} orders total • {arrivedCount} arrived
-                              </p>
+                              <span
+                                className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                                  arrivedCount === list.length && list.length > 0
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : 'bg-purple-100 text-purple-800'
+                                }`}
+                              >
+                                {arrivedCount === list.length && list.length > 0
+                                  ? 'All Arrived ✓'
+                                  : `${list.length - arrivedCount} In Transit`}
+                              </span>
                             </div>
-                            <span
-                              className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                                arrivedCount === list.length && list.length > 0
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : 'bg-purple-100 text-purple-800'
-                              }`}
-                            >
-                              {arrivedCount === list.length && list.length > 0
-                                ? 'All Arrived ✓'
-                                : `${list.length - arrivedCount} In Transit`}
-                            </span>
+
+                            <div className="space-y-2 max-h-[520px] overflow-y-auto pr-1">
+                              {filteredList.length ? (
+                                filteredList.map((order) => (
+                                  <div
+                                    key={order.id}
+                                    className="rounded-xl border border-slate-100 bg-slate-50/80 hover:bg-white hover:border-slate-200 p-2.5 sm:p-3 space-y-1.5 transition shadow-2xs"
+                                  >
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <span className="font-mono text-xs font-black text-slate-900 bg-white border border-slate-300 px-2 py-0.5 rounded shadow-2xs tracking-wider shrink-0">
+                                          #{order.user?.identity_number || 'NO-ID'}
+                                        </span>
+                                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                                          {order.user?.name || 'Student'}
+                                        </h4>
+                                      </div>
+
+                                      <div className="shrink-0">
+                                        {order.status === 'Arrived' ? (
+                                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
+                                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                                            {t.arrived || 'Arrived'}
+                                          </span>
+                                        ) : order.status === 'Packed' ? (
+                                          <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-bold text-sky-800">
+                                            <span className="h-1.5 w-1.5 rounded-full bg-sky-600 animate-pulse" />
+                                            {t.packed || 'Packed'}
+                                          </span>
+                                        ) : (
+                                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800">
+                                            <span className="h-1.5 w-1.5 rounded-full bg-amber-600" />
+                                            {t.pending || 'In Kitchen'}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/50">
+                                      <span className="font-bold text-[#08795d] truncate flex items-center gap-1">
+                                        <span>🍲</span>
+                                        <span className="truncate">{order.menu?.name}</span>
+                                      </span>
+                                      <span className="text-[11px] text-slate-500 font-medium shrink-0 ml-2">
+                                        📍 T22 • 📞 {order.user?.phone || '-'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="py-8 text-center text-xs text-slate-400">
+                                  {dispatchSearchQuery
+                                    ? t.noOrdersMatching || 'No orders match your search query.'
+                                    : 'No orders for T22 yet.'}
+                                </div>
+                              )}
+                            </div>
                           </div>
 
-                          <div className="space-y-2.5 max-h-[520px] overflow-y-auto pr-1">
-                            {filteredList.length ? (
-                              filteredList.map((order) => (
-                                <div
-                                  key={order.id}
-                                  className="rounded-xl border border-slate-100 bg-slate-50/80 hover:bg-white hover:border-slate-200 p-3 space-y-2 transition shadow-2xs"
-                                >
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <span className="font-mono text-xs font-black text-slate-900 bg-white border border-slate-300 px-2 py-0.5 rounded shadow-2xs tracking-wider shrink-0">
-                                        #{order.user?.identity_number || 'NO-ID'}
-                                      </span>
-                                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                                        {order.user?.name || 'Student'}
-                                      </h4>
-                                    </div>
-
-                                    <div className="shrink-0">
-                                      {order.status === 'Arrived' ? (
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
-                                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
-                                          {t.arrived || 'Arrived'}
-                                        </span>
-                                      ) : order.status === 'Packed' ? (
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-bold text-sky-800">
-                                          <span className="h-1.5 w-1.5 rounded-full bg-sky-600 animate-pulse" />
-                                          {t.packed || 'Packed'}
-                                        </span>
-                                      ) : (
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800">
-                                          <span className="h-1.5 w-1.5 rounded-full bg-amber-600" />
-                                          {t.pending || 'In Kitchen'}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/50">
-                                    <span className="font-bold text-[#08795d] truncate flex items-center gap-1">
-                                      <span>🍲</span>
-                                      <span>{order.menu?.name}</span>
-                                    </span>
-                                    <span className="text-[11px] text-slate-500 font-medium shrink-0">
-                                      📍 T22 • 📞 {order.user?.phone || '-'}
-                                    </span>
-                                  </div>
-                                </div>
-                              ))
-                            ) : (
-                              <div className="py-8 text-center text-xs text-slate-400">
-                                {dispatchSearchQuery
-                                  ? t.noOrdersMatching || 'No orders match your search query.'
-                                  : 'No orders for T22 yet.'}
-                              </div>
-                            )}
+                          {/* Section Footer: Arrival Action for T22 */}
+                          <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mt-2">
+                            <p className="text-[11px] text-slate-500 leading-tight">
+                              {t.stationArrivalDesc || 'Notify students when the delivery arrives at their pickup station.'}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => handlePickupArrival('T22')}
+                              disabled={!t22PendingArrivalCount || dispatchingPickup === 'T22'}
+                              className={`w-full sm:w-auto inline-flex items-center justify-center rounded-xl px-3.5 py-2 text-xs font-bold transition-all shadow-xs shrink-0 ${
+                                !t22PendingArrivalCount
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-not-allowed'
+                                  : 'bg-[#08795d] text-white hover:bg-[#07684f] active:scale-[0.98]'
+                              }`}
+                            >
+                              <Truck className="mr-1.5 h-3.5 w-3.5" />
+                              {dispatchingPickup === 'T22'
+                                ? 'T22...'
+                                : !t22PendingArrivalCount && list.length > 0
+                                  ? (t.t22Notified || 'T22 Notified ✓')
+                                  : `${t.notifyT22Students || 'Notify T22 Students'} (${t22PendingArrivalCount})`}
+                            </button>
                           </div>
                         </>
                       );
@@ -1374,7 +1418,7 @@ export default function ManagerDashboardPage() {
 
                 {/* Station T34 Section */}
                 {(dispatchStationFilter === 'All' || dispatchStationFilter === 'T34') && (
-                  <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs space-y-3">
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs space-y-3 flex flex-col justify-between">
                     {(() => {
                       const list = groupedOrders.T34 || [];
                       const filteredList = list.filter((order) => {
@@ -1390,86 +1434,112 @@ export default function ManagerDashboardPage() {
 
                       return (
                         <>
-                          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full bg-sky-600" />
-                                <h3 className="text-base font-bold text-slate-900">
-                                  {PICKUP_LABELS.T34}
-                                </h3>
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="w-2.5 h-2.5 rounded-full bg-sky-600" />
+                                  <h3 className="text-base font-bold text-slate-900">
+                                    {PICKUP_LABELS.T34}
+                                  </h3>
+                                </div>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                  {list.length} orders total • {arrivedCount} arrived
+                                </p>
                               </div>
-                              <p className="text-xs text-slate-500 mt-0.5">
-                                {list.length} orders total • {arrivedCount} arrived
-                              </p>
+                              <span
+                                className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                                  arrivedCount === list.length && list.length > 0
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : 'bg-sky-100 text-sky-800'
+                                }`}
+                              >
+                                {arrivedCount === list.length && list.length > 0
+                                  ? 'All Arrived ✓'
+                                  : `${list.length - arrivedCount} In Transit`}
+                              </span>
                             </div>
-                            <span
-                              className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                                arrivedCount === list.length && list.length > 0
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : 'bg-sky-100 text-sky-800'
-                              }`}
-                            >
-                              {arrivedCount === list.length && list.length > 0
-                                ? 'All Arrived ✓'
-                                : `${list.length - arrivedCount} In Transit`}
-                            </span>
+
+                            <div className="space-y-2 max-h-[520px] overflow-y-auto pr-1">
+                              {filteredList.length ? (
+                                filteredList.map((order) => (
+                                  <div
+                                    key={order.id}
+                                    className="rounded-xl border border-slate-100 bg-slate-50/80 hover:bg-white hover:border-slate-200 p-2.5 sm:p-3 space-y-1.5 transition shadow-2xs"
+                                  >
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <span className="font-mono text-xs font-black text-slate-900 bg-white border border-slate-300 px-2 py-0.5 rounded shadow-2xs tracking-wider shrink-0">
+                                          #{order.user?.identity_number || 'NO-ID'}
+                                        </span>
+                                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                                          {order.user?.name || 'Student'}
+                                        </h4>
+                                      </div>
+
+                                      <div className="shrink-0">
+                                        {order.status === 'Arrived' ? (
+                                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
+                                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                                            {t.arrived || 'Arrived'}
+                                          </span>
+                                        ) : order.status === 'Packed' ? (
+                                          <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-bold text-sky-800">
+                                            <span className="h-1.5 w-1.5 rounded-full bg-sky-600 animate-pulse" />
+                                            {t.packed || 'Packed'}
+                                          </span>
+                                        ) : (
+                                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800">
+                                            <span className="h-1.5 w-1.5 rounded-full bg-amber-600" />
+                                            {t.pending || 'In Kitchen'}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/50">
+                                      <span className="font-bold text-[#08795d] truncate flex items-center gap-1">
+                                        <span>🍲</span>
+                                        <span className="truncate">{order.menu?.name}</span>
+                                      </span>
+                                      <span className="text-[11px] text-slate-500 font-medium shrink-0 ml-2">
+                                        📍 T34 • 📞 {order.user?.phone || '-'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="py-8 text-center text-xs text-slate-400">
+                                  {dispatchSearchQuery
+                                    ? t.noOrdersMatching || 'No orders match your search query.'
+                                    : 'No orders for T34 yet.'}
+                                </div>
+                              )}
+                            </div>
                           </div>
 
-                          <div className="space-y-2.5 max-h-[520px] overflow-y-auto pr-1">
-                            {filteredList.length ? (
-                              filteredList.map((order) => (
-                                <div
-                                  key={order.id}
-                                  className="rounded-xl border border-slate-100 bg-slate-50/80 hover:bg-white hover:border-slate-200 p-3 space-y-2 transition shadow-2xs"
-                                >
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <span className="font-mono text-xs font-black text-slate-900 bg-white border border-slate-300 px-2 py-0.5 rounded shadow-2xs tracking-wider shrink-0">
-                                        #{order.user?.identity_number || 'NO-ID'}
-                                      </span>
-                                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                                        {order.user?.name || 'Student'}
-                                      </h4>
-                                    </div>
-
-                                    <div className="shrink-0">
-                                      {order.status === 'Arrived' ? (
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
-                                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
-                                          {t.arrived || 'Arrived'}
-                                        </span>
-                                      ) : order.status === 'Packed' ? (
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-bold text-sky-800">
-                                          <span className="h-1.5 w-1.5 rounded-full bg-sky-600 animate-pulse" />
-                                          {t.packed || 'Packed'}
-                                        </span>
-                                      ) : (
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800">
-                                          <span className="h-1.5 w-1.5 rounded-full bg-amber-600" />
-                                          {t.pending || 'In Kitchen'}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/50">
-                                    <span className="font-bold text-[#08795d] truncate flex items-center gap-1">
-                                      <span>🍲</span>
-                                      <span>{order.menu?.name}</span>
-                                    </span>
-                                    <span className="text-[11px] text-slate-500 font-medium shrink-0">
-                                      📍 T34 • 📞 {order.user?.phone || '-'}
-                                    </span>
-                                  </div>
-                                </div>
-                              ))
-                            ) : (
-                              <div className="py-8 text-center text-xs text-slate-400">
-                                {dispatchSearchQuery
-                                  ? t.noOrdersMatching || 'No orders match your search query.'
-                                  : 'No orders for T34 yet.'}
-                              </div>
-                            )}
+                          {/* Section Footer: Arrival Action for T34 */}
+                          <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mt-2">
+                            <p className="text-[11px] text-slate-500 leading-tight">
+                              {t.stationArrivalDesc || 'Notify students when the delivery arrives at their pickup station.'}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => handlePickupArrival('T34')}
+                              disabled={!t34PendingArrivalCount || dispatchingPickup === 'T34'}
+                              className={`w-full sm:w-auto inline-flex items-center justify-center rounded-xl px-3.5 py-2 text-xs font-bold transition-all shadow-xs shrink-0 ${
+                                !t34PendingArrivalCount
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-not-allowed'
+                                  : 'bg-[#08795d] text-white hover:bg-[#07684f] active:scale-[0.98]'
+                              }`}
+                            >
+                              <Truck className="mr-1.5 h-3.5 w-3.5" />
+                              {dispatchingPickup === 'T34'
+                                ? 'T34...'
+                                : !t34PendingArrivalCount && list.length > 0
+                                  ? (t.t34Notified || 'T34 Notified ✓')
+                                  : `${t.notifyT34Students || 'Notify T34 Students'} (${t34PendingArrivalCount})`}
+                            </button>
                           </div>
                         </>
                       );
@@ -1889,17 +1959,6 @@ export default function ManagerDashboardPage() {
               </div>
             </div>
           )}
-
-          {/* Mobile Profile Card (Redundant logout button removed; manager identity retained) */}
-          <div className="md:hidden mt-6 p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-emerald-700 text-white font-bold flex items-center justify-center shrink-0 text-xs">
-              {profile?.name ? profile.name.charAt(0).toUpperCase() : 'M'}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold text-slate-900 truncate">{profile?.name || 'Manager'}</p>
-              <p className="text-[10px] text-slate-500 truncate">Kitchen Operations</p>
-            </div>
-          </div>
         </main>
       </div>
 
