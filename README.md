@@ -1,5 +1,7 @@
 # Mesob Delivery
 
+> **Demo accounts:** To let others explore the app, configure dedicated demo-only student and manager accounts in a non-production environment. Share their credentials privately; do not publish passwords or production account details in this repository.
+
 Mesob Delivery is a mobile-first meal subscription and scheduled cafeteria pickup application for university communities. Students can manage a meal subscription, choose dishes during meal windows, and follow order progress to campus pickup points. Cafeteria managers can manage menus, review subscriptions, and coordinate meal preparation and pickup.
 
 > Developed as a capstone project following the INSA Cyber Talent Center Summer Camp at Bahir Dar University.
