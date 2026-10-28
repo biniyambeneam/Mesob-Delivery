@@ -136,9 +136,9 @@ vite.config.js
 
 ## Academic context
 
-- **Author:** Biniyam Yimen Tilahun
+- **Author:** Biniyam 
 - **Institution:** Bahir Dar University
-- **Program:** INSA Cyber Talent Center Software Development Summer Camp
+- **Program:** INSA Cyber Talent Center  Summer Camp
 
 ## License
 
